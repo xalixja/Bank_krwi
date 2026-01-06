@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Zapotrzebowania szpitali</title>
+</head>
+<body>
+
+<h1>Zapotrzebowania szpitali</h1>
+<p><a href="/pracownik">⬅ Powrót do panelu</a></p>
+
+<h2>Lista zapotrzebowań</h2>
+
+<table border="1" cellpadding="6">
+    <tr>
+        <th>ID</th>
+        <th>Szpital</th>
+        <th>Grupa krwi</th>
+        <th>Ilość (ml)</th>
+        <th>Status</th>
+        <th>Data wydania</th>
+        <th>Akcje</th>
+    </tr>
+
+    {% for z in zapotrzebowania %}
+    <tr>
+        <td>{{ z[0] }}</td>
+        <td>{{ z[1] }}</td>
+        <td>{{ z[2] }}{{ z[3] }}</td>
+        <td>{{ z[4] }}</td>
+        <td>{{ z[5] }}</td>
+        <td>{{ z[6] }}</td>
+
+        <td>
+            {% if z[5] == 'oczekujace' %}
+            <form method="POST" action="/pracownik/zapotrzebowania/zrealizuj/{{ z[0] }}" style="display:inline;">
+                <button type="submit">Zrealizuj</button>
+            </form>
+            {% else %}
+            ✔ Zrealizowane
+            {% endif %}
+        </td>
+    </tr>
+    {% endfor %}
+</table>
+
+</body>
+</html>

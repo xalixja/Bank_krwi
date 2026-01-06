@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Oddania krwi</title>
+</head>
+<body>
+
+<h1>Oddania krwi</h1>
+<p><a href="/pracownik">⬅ Powrót do panelu</a></p>
+
+<h2>Dodaj oddanie</h2>
+<form method="POST">
+    <p>ID dawcy: <input type="number" name="id_dawcy" required></p>
+    <p>Ilość (ml): <input type="number" name="ilosc_ml" required></p>
+    <p>Data oddania: <input type="date" name="data_oddania" required></p>
+    <button type="submit">Dodaj</button>
+</form>
+
+<h2>Lista oddań</h2>
+
+<table border="1" cellpadding="6">
+    <tr>
+        <th>Dawca</th>
+        <th>Grupa</th>
+        <th>Ilość (ml)</th>
+        <th>Data ważności</th>
+        <th>Akcje</th>
+    </tr>
+
+    {% for o in oddania %}
+    <tr>
+        <td>{{ o[1] }}</td>
+        <td>{{ o[2] }}{{ o[3] }}</td>
+        <td>{{ o[4] }}</td>
+        <td>{{ o[5] }}</td>
+        <td>
+            <a href="/pracownik/oddania/edytuj/{{ o[0] }}">Edytuj</a> |
+            <a href="/pracownik/oddania/usun/{{ o[0] }}">Usuń</a>
+        </td>
+    </tr>
+    {% endfor %}
+</table>
+
+</body>
+</html>

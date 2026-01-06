@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Panel szpitala</title>
+</head>
+<body>
+
+<h1>Panel szpitala</h1>
+
+<h2>{{ nazwa }}</h2>
+<p><strong>Adres:</strong> {{ adres }}</p>
+
+<h3>Statystyki zapotrzebowań</h3>
+<ul>
+    <li><strong>Oczekujące:</strong> {{ oczekujace }}</li>
+    <li><strong>Zrealizowane:</strong> {{ zrealizowane }}</li>
+    <li><strong>Wszystkie:</strong> {{ wszystkie }}</li>
+</ul>
+
+<h3>Moduły</h3>
+<ul>
+    <li><a href="/szpital/zapotrzebowania">Zapotrzebowania</a></li>
+    <li><a href="/szpital/zapotrzebowania/dodaj">Dodaj zapotrzebowanie</a></li>
+</ul>
+
+<p><a href="/logout">Wyloguj</a></p>
+
+</body>
+</html>

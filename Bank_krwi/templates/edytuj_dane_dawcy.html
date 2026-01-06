@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Edytuj dane dawcy</title>
+</head>
+<body>
+
+<h1>Edytuj swoje dane</h1>
+
+<form method="POST">
+
+    <p>Imię:
+        <input type="text" name="imie" value="{{ imie }}" required>
+    </p>
+
+    <p>Nazwisko:
+        <input type="text" name="nazwisko" value="{{ nazwisko }}" required>
+    </p>
+
+    <p>PESEL:
+        <input type="text" name="pesel" value="{{ pesel }}" required>
+    </p>
+
+    <p>Kontakt:
+        <input type="text" name="kontakt" value="{{ kontakt }}" required>
+    </p>
+
+    <p>Grupa krwi:
+        <select name="grupa" required>
+            <option value="A" {% if grupa == 'A' %}selected{% endif %}>A</option>
+            <option value="B" {% if grupa == 'B' %}selected{% endif %}>B</option>
+            <option value="AB" {% if grupa == 'AB' %}selected{% endif %}>AB</option>
+            <option value="0" {% if grupa == '0' %}selected{% endif %}>0</option>
+        </select>
+    </p>
+
+    <p>Rh:
+        <select name="rh" required>
+            <option value="+" {% if rh == '+' %}selected{% endif %}>+</option>
+            <option value="-" {% if rh == '-' %}selected{% endif %}>-</option>
+        </select>
+    </p>
+
+    <button type="submit">Zapisz zmiany</button>
+</form>
+
+<p><a href="/dawca/dane">⬅ Powrót</a></p>
+
+</body>
+</html>
