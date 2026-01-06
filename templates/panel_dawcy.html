@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Panel dawcy</title>
+</head>
+<body>
+<h1>Panel dawcy</h1>
+
+<h2>Witaj, {{ imie }}!</h2>
+
+<p><a href="/dawca/dane" style="font-weight:bold;">Dane dawcy</a></p>
+<p><a href="/dawca/zgloszenia-oddania">Zgłoszenia i historia oddań</a></p>
+
+<p><strong>Liczba oddań:</strong> {{ liczba_oddan }}</p>
+
+<p><strong>Suma oddanej krwi:</strong>
+    {% if suma_ml %}
+    {{ suma_ml }} ml
+    {% else %}
+    Brak danych
+    {% endif %}
+</p>
+
+<p><strong>Pierwsze oddanie:</strong>
+    {% if pierwsze %}
+    {{ pierwsze }}
+    {% else %}
+    Brak danych
+    {% endif %}
+</p>
+
+<p><strong>Ostatnie oddanie:</strong>
+    {% if ostatnie %}
+    {{ ostatnie }}
+    {% else %}
+    Brak danych
+    {% endif %}
+</p>
+
+<p><strong>Najbliższe zgłoszenie:</strong>
+    {% if najblizsze %}
+    {{ najblizsze }}
+    {% else %}
+    Brak zgłoszeń
+    {% endif %}
+</p>
+
+<h3>Historia badań</h3>
+
+{% if historia_badan %}
+<table border="1" cellpadding="6">
+    <tr>
+        <th>Data badania</th>
+        <th>Rodzaj badania</th>
+        <th>Wynik</th>
+    </tr>
+
+    {% for badanie in historia_badan %}
+    <tr>
+        <td>{{ badanie[0] }}</td>
+        <td>{{ badanie[1] }}</td>
+        <td
+                {% if badanie[2] == 'negatywny' %}
+                    style="color: green; font-weight: bold;"
+                {% elif badanie[2] == 'pozytywny' %}
+                    style="color: red; font-weight: bold;"
+                {% endif %}
+            >
+            {{ badanie[2] }}
+        </td>
+    </tr>
+    {% endfor %}
+</table>
+{% else %}
+<p>Brak badań.</p>
+{% endif %}
+
+<a href="/logout">Wyloguj</a>
+</body>
+</html>

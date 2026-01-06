@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Zapotrzebowania szpitala</title>
+</head>
+<body>
+
+<h1>Zapotrzebowania szpitala</h1>
+<p><a href="/szpital">⬅ Powrót do panelu</a></p>
+
+<h2>Lista zapotrzebowań</h2>
+
+<table border="1" cellpadding="6">
+    <tr>
+        <th>ID</th>
+        <th>Grupa krwi</th>
+        <th>Ilość (ml)</th>
+        <th>Status</th>
+        <th>Data wydania</th>
+    </tr>
+
+    {% for z in zapotrzebowania %}
+    <tr>
+        <td>{{ z[0] }}</td>
+        <td>{{ z[1] }}{{ z[2] }}</td>
+        <td>{{ z[3] }}</td>
+
+        <td
+                {% if z[4] == 'oczekujace' %}
+        style="color: orange; font-weight: bold;"
+        {% else %}
+        style="color: green; font-weight: bold;"
+        {% endif %}
+        >
+        {{ z[4] }}
+        </td>
+
+        <td>{{ z[5] }}</td>
+    </tr>
+    {% endfor %}
+</table>
+
+</body>
+</html>

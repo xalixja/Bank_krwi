@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Badania</title>
+</head>
+<body>
+
+<h1>Badania krwi</h1>
+<p><a href="/pracownik">⬅ Powrót do panelu</a></p>
+
+<h2>Dodaj badanie</h2>
+<form method="POST">
+    <p>ID oddania: <input type="number" name="id_oddania" required></p>
+    <p>Rodzaj badania: <input type="text" name="rodzaj" required></p>
+    <p>Wynik:
+        <select name="wynik">
+            <option value="negatywny">negatywny</option>
+            <option value="pozytywny">pozytywny</option>
+        </select>
+    </p>
+    <p>Data badania: <input type="date" name="data_badania" required></p>
+    <button type="submit">Dodaj</button>
+</form>
+
+<h2>Lista badań</h2>
+
+<table border="1" cellpadding="6">
+    <tr>
+        <th>ID oddania</th>
+        <th>Dawca</th>
+        <th>Rodzaj</th>
+        <th>Wynik</th>
+        <th>Data</th>
+        <th>Akcje</th>
+    </tr>
+
+    {% for b in badania %}
+    <tr>
+        <td>{{ b[1] }}</td>
+        <td>{{ b[2] }}</td>
+        <td>{{ b[3] }}</td>
+        <td
+                {% if b[4] == 'negatywny' %}
+        style="color: green; font-weight: bold;"
+        {% else %}
+        style="color: red; font-weight: bold;"
+        {% endif %}
+        >
+        {{ b[4] }}
+        </td>
+        <td>{{ b[5] }}</td>
+        <td>
+            <a href="/pracownik/badania/edytuj/{{ b[0] }}">Edytuj</a> |
+            <a href="/pracownik/badania/usun/{{ b[0] }}">Usuń</a>
+        </td>
+    </tr>
+    {% endfor %}
+</table>
+
+</body>
+</html>

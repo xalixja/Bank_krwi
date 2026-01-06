@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Panel pracownika</title>
+</head>
+<body>
+
+<h1>Panel pracownika</h1>
+
+<h2>Witaj, {{ imie }} {{ nazwisko }}!</h2>
+<p><strong>Stanowisko:</strong> {{ stanowisko }}</p>
+
+<h3>Twoja aktywność</h3>
+<ul>
+    <li><strong>Liczba obsłużonych oddań:</strong> {{ oddania }}</li>
+    <li><strong>Liczba wykonanych badań:</strong> {{ badania }}</li>
+    <li><strong>Liczba obsłużonych zapotrzebowań:</strong> {{ zapotrzebowania }}</li>
+</ul>
+
+<h3>Moduły</h3>
+<ul>
+    <li><a href="/pracownik/badania">Badania</a></li>
+    <li><a href="/pracownik/oddania">Oddania krwi</a></li>
+    <li><a href="/pracownik/zapotrzebowania">Zapotrzebowania szpitali</a></li>
+    <li><a href="/pracownik/magazyn">Magazyn krwi</a></li>
+</ul>
+
+
+<p><a href="/logout">Wyloguj</a></p>
+
+</body>
+</html>
