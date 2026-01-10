@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Edytuj oddanie</title>
+</head>
+<body>
+
+<h1>Edytuj oddanie</h1>
+
+<form method="POST">
+    <p>ID dawcy: <strong>{{ oddanie[1] }}</strong></p>
+
+    <p>Ilość (ml):
+        <input type="number" name="ilosc_ml" value="{{ oddanie[2] }}" required>
+    </p>
+
+    <p>Data oddania:
+        <input type="date" name="data_oddania" value="{{ oddanie[3] }}" required>
+    </p>
+
+    <button type="submit">Zapisz zmiany</button>
+</form>
+
+<p><a href="/pracownik/oddania">⬅ Powrót</a></p>
+
+</body>
+</html>

@@ -13,8 +13,8 @@ def get_db():
 conn = get_db()
 cur = conn.cursor()
 
-# cur.execute("SELECT * FROM pg_extension;")
-# print(cur.fetchall())
+cur.execute("SELECT * FROM pg_extension;")
+print(cur.fetchall())
 
 cur.close()
 conn.close()

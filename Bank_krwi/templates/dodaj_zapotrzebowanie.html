@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Dodaj zapotrzebowanie</title>
+</head>
+<body>
+
+<h1>Dodaj zapotrzebowanie</h1>
+<p><a href="/szpital">⬅ Powrót do panelu</a></p>
+
+<form method="POST">
+
+    <p>Grupa krwi:
+        <select name="grupa" required>
+            <option value="A">A</option>
+            <option value="B">B</option>
+            <option value="AB">AB</option>
+            <option value="0">0</option>
+        </select>
+    </p>
+
+    <p>Rh:
+        <select name="rh" required>
+            <option value="+">+</option>
+            <option value="-">-</option>
+        </select>
+    </p>
+
+    <p>Ilość (ml):
+        <input type="number" name="ilosc_ml" min="1" required>
+    </p>
+
+    <p>Data wydania:
+        <input type="date" name="data_wydania" required>
+    </p>
+
+    <button type="submit">Dodaj zapotrzebowanie</button>
+</form>
+
+</body>
+</html>
