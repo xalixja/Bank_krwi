@@ -3,6 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <title>Magazyn krwi</title>
+    <style>
+        .status-dostepne { background-color: #c8f7c5; }   /* zielony */
+        .status-zuzyte { background-color: #f7c5c5; }     /* czerwony */
+        .status-przeterminowane { background-color: #f7e6c5; } /* pomarańczowy */
+    </style>
 </head>
 <body>
 
@@ -38,17 +43,21 @@
         <th>ID oddania</th>
         <th>Dawca</th>
         <th>Grupa</th>
-        <th>Ilość (ml)</th>
+        <th>Ilość początkowa (ml)</th>
+        <th>Ilość pozostała (ml)</th>
+        <th>Status</th>
         <th>Data ważności</th>
     </tr>
 
     {% for m in magazyn %}
-    <tr>
+    <tr class="status-{{ m[6] }}">
         <td>{{ m[0] }}</td>
         <td>{{ m[1] }}</td>
         <td>{{ m[2] }}{{ m[3] }}</td>
-        <td>{{ m[4] }}</td>
-        <td>{{ m[5] }}</td>
+        <td>{{ m[4] }}</td>  <!-- ilosc_poczatkowa -->
+        <td>{{ m[5] }}</td>  <!-- ilosc_pozostala -->
+        <td>{{ m[6] }}</td>  <!-- status -->
+        <td>{{ m[7] }}</td>  <!-- data_waznosci -->
     </tr>
     {% endfor %}
 </table>

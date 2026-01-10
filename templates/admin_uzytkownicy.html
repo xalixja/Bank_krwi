@@ -1,0 +1,74 @@
+<h1>Użytkownicy</h1>
+<p><a href="/admin">⬅ Powrót</a></p>
+
+<table border="1">
+    <tr><th>ID</th><th>Login</th><th>Rola</th><th>Data rejestracji</th><th>Usuń</th></tr>
+    {% for u in uzytkownicy %}
+    <tr>
+        <td>{{ u[0] }}</td>
+        <td>{{ u[1] }}</td>
+        <td>{{ u[2] }}</td>
+        <td>{{ u[3] }}</td>
+        <td>
+            <form method="POST" action="/admin/uzytkownicy/usun/{{ u[0] }}">
+                <button type="submit">Usuń</button>
+            </form>
+        </td>
+    </tr>
+    {% endfor %}
+</table>
+
+<h2>Dodaj użytkownika</h2>
+
+<form method="POST" action="/admin/uzytkownicy/dodaj">
+
+    <p>Login: <input name="login" required></p>
+    <p>Hasło: <input name="haslo" type="password" required></p>
+
+    <p>Rola:
+        <select name="rola" id="rola" onchange="pokazPola()">
+            <option value="ADMIN">ADMIN</option>
+            <option value="PRACOWNIK">PRACOWNIK</option>
+            <option value="SZPITAL">SZPITAL</option>
+            <option value="DAWCA">DAWCA</option>
+        </select>
+    </p>
+
+    <!-- POLA DLA DAWCY -->
+    <div id="dawca" style="display:none;">
+        <h3>Dane dawcy</h3>
+        <p>Imię: <input name="d_imie"></p>
+        <p>Nazwisko: <input name="d_nazwisko"></p>
+        <p>PESEL: <input name="d_pesel"></p>
+        <p>Grupa krwi: <input name="d_grupa"></p>
+        <p>Rh: <input name="d_rh"></p>
+        <p>Kontakt: <input name="d_kontakt"></p>
+    </div>
+
+    <!-- POLA DLA PRACOWNIKA -->
+    <div id="pracownik" style="display:none;">
+        <h3>Dane pracownika</h3>
+        <p>Imię: <input name="p_imie"></p>
+        <p>Nazwisko: <input name="p_nazwisko"></p>
+        <p>Stanowisko: <input name="p_stanowisko"></p>
+    </div>
+
+    <!-- POLA DLA SZPITALA -->
+    <div id="szpital" style="display:none;">
+        <h3>Dane szpitala</h3>
+        <p>Nazwa: <input name="s_nazwa"></p>
+        <p>Adres: <input name="s_adres"></p>
+    </div>
+
+    <button type="submit">Dodaj</button>
+</form>
+
+<script>
+    function pokazPola() {
+        let rola = document.getElementById("rola").value;
+
+        document.getElementById("dawca").style.display = (rola === "DAWCA") ? "block" : "none";
+        document.getElementById("pracownik").style.display = (rola === "PRACOWNIK") ? "block" : "none";
+        document.getElementById("szpital").style.display = (rola === "SZPITAL") ? "block" : "none";
+    }
+</script>
