@@ -1,6 +1,8 @@
 from flask import Flask, render_template, request, redirect, session
 from db.connection import get_db
 from functools import wraps
+import psycopg2
+from datetime import date
 
 app = Flask(__name__)
 app.secret_key = "koko"   # zmień na swój
@@ -284,7 +286,7 @@ def zgloszenia_oddania():
     conn = get_db()
     cur = conn.cursor()
 
-    # Ustalamy id_dawcy na podstawie zalogowanego użytkownika
+    # Pobranie id_dawcy
     cur.execute("""
                 SELECT id_dawcy
                 FROM dawcy
@@ -299,28 +301,61 @@ def zgloszenia_oddania():
 
     id_dawcy = row[0]
 
-    # Obsługa formularza - dodanie nowego zgłoszenia
+    # Obsługa formularza
     if request.method == "POST":
         data_zgloszenia = request.form.get("data_zgloszenia")
 
-        # Jeśli użytkownik nie poda daty, ustawiamy dzisiejszą
         if not data_zgloszenia:
             cur.execute("SELECT CURRENT_DATE;")
             data_zgloszenia = cur.fetchone()[0]
 
-        cur.execute("""
-                    INSERT INTO zgloszenia (id_dawcy, data_zgloszenia, status)
-                    VALUES (%s, %s, 'oczekujace');
-                    """, (id_dawcy, data_zgloszenia))
+        try:
+            cur.execute("""
+                        INSERT INTO zgloszenia (id_dawcy, data_zgloszenia, status)
+                        VALUES (%s, %s, 'oczekujace');
+                        """, (id_dawcy, data_zgloszenia))
+            conn.commit()
 
-        conn.commit()
+            # redirect TYLKO po udanym dodaniu
+            cur.close()
+            conn.close()
+            return redirect("/dawca/zgloszenia-oddania")
 
-        # po dodaniu zgłoszenia robimy redirect, żeby uniknąć ponownego submitu formularza
-        cur.close()
-        conn.close()
-        return redirect("/dawca/zgloszenia-oddania")
+        except psycopg2.Error as e:
+            conn.rollback()
+            error_message = str(e).split("CONTEXT")[0].replace("ERROR:", "").strip()
 
-    # Pobranie listy zgłoszeń danego dawcy
+            # Pobieramy listę zgłoszeń i oddań, żeby strona się poprawnie wyświetliła
+            cur.execute("""
+                        SELECT id_zgloszenia, data_zgloszenia, status
+                        FROM zgloszenia
+                        WHERE id_dawcy = %s
+                        ORDER BY data_zgloszenia DESC;
+                        """, (id_dawcy,))
+            zgloszenia = cur.fetchall()
+
+            cur.execute("""
+                        SELECT ilosc_ml, data_oddania
+                        FROM oddania_krwi
+                        WHERE id_dawcy = %s
+                        ORDER BY data_oddania DESC;
+                        """, (id_dawcy,))
+            oddania = cur.fetchall()
+
+            cur.close()
+            conn.close()
+
+            return render_template(
+                "zgloszenia_oddania.html",
+                error=error_message,
+                zgloszenia=zgloszenia,
+                oddania=oddania
+            )
+
+    # -------------------------
+    # CZĘŚĆ GET — normalne wyświetlanie strony
+    # -------------------------
+
     cur.execute("""
                 SELECT id_zgloszenia, data_zgloszenia, status
                 FROM zgloszenia
@@ -329,18 +364,11 @@ def zgloszenia_oddania():
                 """, (id_dawcy,))
     zgloszenia = cur.fetchall()
 
-    # Pobranie historii oddań z widoku widok_magazyn
-    # Zakładam, że w widoku jest kolumna 'dawca' (Imię Nazwisko)
     cur.execute("""
-                SELECT id_oddania, dawca, grupa_krwi, rh,
-                       ilosc_poczatkowa, ilosc_pozostala, status, data_waznosci
-                FROM widok_magazyn
-                WHERE id_oddania IN (
-                    SELECT id_oddania
-                    FROM oddania_krwi
-                    WHERE id_dawcy = %s
-                )
-                ORDER BY data_waznosci DESC;
+                SELECT ilosc_ml, data_oddania
+                FROM oddania_krwi
+                WHERE id_dawcy = %s
+                ORDER BY data_oddania DESC;
                 """, (id_dawcy,))
     oddania = cur.fetchall()
 
@@ -395,6 +423,36 @@ def ustaw_cel():
     conn.close()
 
     return redirect("/dawca")
+
+@app.route("/dawca/przekazania")
+@login_required(role="DAWCA")
+def przekazania():
+    user_id = session["user_id"]
+    conn = get_db()
+    cur = conn.cursor()
+
+    # Pobranie id_dawcy
+    cur.execute("""
+                SELECT id_dawcy
+                FROM dawcy
+                WHERE id_uzytkownika = %s;
+                """, (user_id,))
+    id_dawcy = cur.fetchone()[0]
+
+    # Pobranie danych z widoku
+    cur.execute("""
+                SELECT szpital, data_przekazania, ilosc_oddana
+                FROM widok_dawcy_szpitale
+                WHERE id_dawcy = %s
+                ORDER BY data_przekazania DESC;
+                """, (id_dawcy,))
+    przekazania = cur.fetchall()
+
+    cur.close()
+    conn.close()
+
+    return render_template("przekazania.html", przekazania=przekazania)
+
 
 
 @app.route("/pracownik")
@@ -511,7 +569,6 @@ def edytuj_dane_pracownika():
         stanowisko=dane[2]
     )
 
-
 @app.route("/pracownik/badania", methods=["GET", "POST"])
 @login_required(role="PRACOWNIK")
 def badania():
@@ -535,6 +592,12 @@ def badania():
         wynik = request.form["wynik"]
         data_badania = request.form["data_badania"]
 
+        # WALIDACJA: data nie może być z przyszłości
+        if data_badania > str(date.today()):
+            cur.close()
+            conn.close()
+            return "Data badania nie może być z przyszłości.", 400
+
         cur.execute("""
                     INSERT INTO badania (id_oddania, id_pracownika, rodzaj_badania, wynik, data_badania)
                     VALUES (%s, %s, %s, %s, %s);
@@ -553,10 +616,24 @@ def badania():
                 """)
     badania = cur.fetchall()
 
+    # Pobranie statystyk
+    cur.execute("SELECT negatywne, pozytywne FROM widok_statystyki_badan;")
+    negatywne, pozytywne = cur.fetchone()
+
     cur.close()
     conn.close()
 
-    return render_template("badania.html", badania=badania, id_pracownika=id_pracownika)
+    return render_template(
+        "badania.html",
+        badania=badania,
+        id_pracownika=id_pracownika,
+        negatywne=negatywne,
+        pozytywne=pozytywne,
+        today=date.today()  # ← potrzebne do max="..."
+    )
+
+
+from datetime import date
 
 @app.route("/pracownik/badania/edytuj/<int:id_badania>", methods=["GET", "POST"])
 @login_required(role="PRACOWNIK")
@@ -566,7 +643,7 @@ def edytuj_badanie(id_badania):
     conn = get_db()
     cur = conn.cursor()
 
-    # Pobranie id_pracownika zalogowanego użytkownika
+    # Pobranie id_pracownika
     cur.execute("""
                 SELECT id_pracownika
                 FROM pracownicy_banku
@@ -574,17 +651,15 @@ def edytuj_badanie(id_badania):
                 """, (user_id,))
     id_pracownika = cur.fetchone()[0]
 
-    # Pobranie badania TYLKO jeśli wykonał je ten pracownik
+    # Pobranie badania TYLKO jeśli należy do pracownika
     cur.execute("""
                 SELECT id_badania, id_oddania, rodzaj_badania, wynik, data_badania
                 FROM badania
                 WHERE id_badania = %s
                   AND id_pracownika = %s;
                 """, (id_badania, id_pracownika))
-
     badanie = cur.fetchone()
 
-    # Jeśli badanie nie należy do pracownika → blokujemy dostęp
     if not badanie:
         cur.close()
         conn.close()
@@ -595,6 +670,12 @@ def edytuj_badanie(id_badania):
         rodzaj = request.form["rodzaj"]
         wynik = request.form["wynik"]
         data_badania = request.form["data_badania"]
+
+        # WALIDACJA: data nie może być z przyszłości
+        if data_badania > str(date.today()):
+            cur.close()
+            conn.close()
+            return "Data badania nie może być z przyszłości.", 400
 
         cur.execute("""
                     UPDATE badania
@@ -613,7 +694,12 @@ def edytuj_badanie(id_badania):
     cur.close()
     conn.close()
 
-    return render_template("edytuj_badanie.html", badanie=badanie)
+    return render_template(
+        "edytuj_badanie.html",
+        badanie=badanie,
+        today=date.today()  # ← potrzebne do max="..."
+    )
+
 
 
 @app.route("/pracownik/badania/usun/<int:id_badania>")
@@ -646,21 +732,33 @@ def oddania():
                 """, (user_id,))
     id_pracownika = cur.fetchone()[0]
 
-    # Dodawanie oddania
+    error = None
+
+    cur.execute("SELECT srednia_ml FROM widok_srednia_ilosc;")
+    srednia = cur.fetchone()[0]
+
+# Dodawanie oddania
     if request.method == "POST":
         id_dawcy = request.form["id_dawcy"]
         ilosc_ml = request.form["ilosc_ml"]
         data_oddania = request.form["data_oddania"]
 
-        cur.execute("""
-                    INSERT INTO oddania_krwi (id_dawcy, id_pracownika, ilosc_ml, data_oddania, ilosc_pozostala)
-                    VALUES (%s, %s, %s, %s, %s);
-                    """, (id_dawcy, id_pracownika, ilosc_ml, data_oddania, ilosc_ml))
+        # -----------------------------
+        # WALIDACJA: data nie może być z przyszłości
+        # -----------------------------
+        if data_oddania > str(date.today()):
+            error = "Data oddania nie może być z przyszłości."
+        else:
+            # Zapis oddania
+            cur.execute("""
+                        INSERT INTO oddania_krwi (id_dawcy, id_pracownika, ilosc_ml, data_oddania, ilosc_pozostala)
+                        VALUES (%s, %s, %s, %s, %s);
+                        """, (id_dawcy, id_pracownika, ilosc_ml, data_oddania, ilosc_ml))
 
-        conn.commit()
-        cur.close()
-        conn.close()
-        return redirect("/pracownik/oddania")
+            conn.commit()
+            cur.close()
+            conn.close()
+            return redirect("/pracownik/oddania")
 
     # Pobranie oddań
     cur.execute("""
@@ -681,7 +779,7 @@ def oddania():
     cur.close()
     conn.close()
 
-    return render_template("oddania.html", oddania=oddania)
+    return render_template("oddania.html", oddania=oddania, error=error, srednia=srednia)
 
 @app.route("/pracownik/oddania/edytuj/<int:id_oddania>", methods=["GET", "POST"])
 @login_required(role="PRACOWNIK")
@@ -700,13 +798,34 @@ def edytuj_oddanie(id_oddania):
     if request.method == "POST":
         ilosc_ml = request.form["ilosc_ml"]
         data_oddania = request.form["data_oddania"]
-        ilosc_pozostala = request.form["ilosc_pozostala"]
+        ilosc_pozostala = oddanie[4]
 
+        # 1. Walidacja daty
+        if data_oddania > str(date.today()):
+            cur.close()
+            conn.close()
+            return render_template(
+                "edytuj_oddanie.html",
+                oddanie=oddanie,
+                error="Data oddania nie może być z przyszłości."
+            )
+
+        # 2. Walidacja ilości
+        if int(ilosc_ml) < int(ilosc_pozostala):
+            cur.close()
+            conn.close()
+            return render_template(
+                "edytuj_oddanie.html",
+                oddanie=oddanie,
+                error="Ilość początkowa musi być większa niż ilość pozostała."
+            )
+
+        # 3. UPDATE
         cur.execute("""
                     UPDATE oddania_krwi
                     SET ilosc_ml = %s,
                         data_oddania = %s
-                    WHERE id_oddania = %s AND ilosc_ml>ilosc_pozostala;
+                    WHERE id_oddania = %s;
                     """, (ilosc_ml, data_oddania, id_oddania))
 
         conn.commit()
@@ -718,6 +837,7 @@ def edytuj_oddanie(id_oddania):
     conn.close()
 
     return render_template("edytuj_oddanie.html", oddanie=oddanie)
+
 
 @app.route("/pracownik/oddania/usun/<int:id_oddania>")
 @login_required(role="PRACOWNIK")
@@ -763,21 +883,14 @@ def zapotrzebowania():
     filter_status = request.form.get("filter_status") if request.method == "POST" else None
 
     base_query = """
-                 SELECT z.id_zapotrzebowania,
-                        s.nazwa,
-                        z.grupa_krwi,
-                        z.rh,
-                        z.ilosc_ml,
-                        z.status,
-                        z.data_wydania
-                 FROM zapotrzebowania z
-                          JOIN szpitale s ON s.id_szpitala = z.id_szpitala \
+                 SELECT *
+                 FROM widok_status_zapotrzebowan
                  """
 
     if filter_status and filter_status != "wszystkie":
-        cur.execute(base_query + " WHERE z.status = %s ORDER BY z.data_wydania DESC;", (filter_status,))
+        cur.execute(base_query + " WHERE status = %s ORDER BY data_wydania DESC;", (filter_status,))
     else:
-        cur.execute(base_query + " ORDER BY z.data_wydania DESC;")
+        cur.execute(base_query + " ORDER BY data_wydania DESC;")
 
     zapotrzebowania = cur.fetchall()
 
@@ -916,36 +1029,52 @@ def zrealizuj_zapotrzebowanie(id_zapotrzebowania):
         conn.close()
         raise e # Rzuć błąd dalej, żeby widzieć go w konsoli
 
-
 @app.route("/pracownik/magazyn", methods=["GET", "POST"])
 @login_required(role="PRACOWNIK")
 def magazyn():
     conn = get_db()
     cur = conn.cursor()
 
-    grupa = request.form.get("grupa") if request.method == "POST" else None
-    rh = request.form.get("rh") if request.method == "POST" else None
+    # Pobieramy dane z formularza
+    grupa = request.form.get("grupa")
+    rh = request.form.get("rh")
 
-    # --- 1. KREW DOSTĘPNA (z filtrowaniem) ---
-    base_query = """
-                 SELECT id_oddania, dawca, grupa_krwi, rh,
-                        ilosc_poczatkowa, ilosc_pozostala, status, data_waznosci
-                 FROM widok_magazyn
-                 WHERE status = 'dostepne' \
-                 """
+    # Obsługa pustych wartości (jeśli ktoś wybrał "-- wszystkie --")
+    if grupa == "":
+        grupa = None
+    if rh == "":
+        rh = None
 
-    if grupa and rh:
-        cur.execute(base_query + " AND grupa_krwi = %s AND rh = %s ORDER BY data_waznosci ASC;",
-                    (grupa, rh))
-    elif grupa:
-        cur.execute(base_query + " AND grupa_krwi = %s ORDER BY data_waznosci ASC;",
-                    (grupa,))
-    else:
-        cur.execute(base_query + " ORDER BY data_waznosci ASC;")
+    # NAPRAWA PLUSIKA: Czasami przeglądarka wysyła "+" jako spację " "
+    if rh == ' ':
+        rh = '+'
 
+    # --- 1. KREW DOSTĘPNA (BUDOWANIE ZAPYTANIA) ---
+    query = """
+            SELECT id_oddania, dawca, grupa_krwi, rh,
+                   ilosc_poczatkowa, ilosc_pozostala, status, data_waznosci
+            FROM widok_magazyn
+            WHERE status = 'dostepne'
+            """
+    params = []
+
+    # Dynamiczne dodawanie warunków
+    if grupa:
+        query += " AND grupa_krwi = %s"
+        params.append(grupa)
+
+    if rh:
+        query += " AND rh = %s"
+        params.append(rh)
+
+    # Na końcu sortowanie
+    query += " ORDER BY data_waznosci ASC;"
+
+    # Wykonanie zapytania z parametrami
+    cur.execute(query, tuple(params))
     dostepne = cur.fetchall()
 
-    # --- 2. KREW PRZETERMINOWANA ---
+    # --- 2. POZOSTAŁE STATUSY (Bez zmian) ---
     cur.execute("""
                 SELECT id_oddania, dawca, grupa_krwi, rh,
                        ilosc_poczatkowa, ilosc_pozostala, status, data_waznosci
@@ -955,7 +1084,6 @@ def magazyn():
                 """)
     przeterminowane = cur.fetchall()
 
-    # --- 3. KREW ZUŻYTA ---
     cur.execute("""
                 SELECT id_oddania, dawca, grupa_krwi, rh,
                        ilosc_poczatkowa, ilosc_pozostala, status, data_waznosci
@@ -965,7 +1093,6 @@ def magazyn():
                 """)
     zuzyte = cur.fetchall()
 
-    # --- 3. KREW ODRZUCONA ---
     cur.execute("""
                 SELECT id_oddania, dawca, grupa_krwi, rh,
                        ilosc_poczatkowa, ilosc_pozostala, status, data_waznosci
@@ -985,6 +1112,24 @@ def magazyn():
         zuzyte=zuzyte,
         odrzucone=odrzucone
     )
+
+@app.route("/pracownik/powiazania")
+@login_required(role="PRACOWNIK")
+def powiazania():
+    conn = get_db()
+    cur = conn.cursor()
+
+    cur.execute("""
+                SELECT *
+                FROM widok_powiazania
+                ORDER BY id_zapotrzebowania DESC;
+                """)
+    powiazania = cur.fetchall()
+
+    cur.close()
+    conn.close()
+
+    return render_template("powiazania.html", powiazania=powiazania)
 
 
 

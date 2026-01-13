@@ -1,120 +1,151 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <meta charset="UTF-8">
-    <title>Zgłoszenia i oddania</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-        }
-        .container {
-            display: flex;
-            gap: 40px;
-            align-items: flex-start;
-        }
-        .column {
-            width: 50%;
-        }
-        table {
-            border-collapse: collapse;
-            width: 100%;
-        }
-        th, td {
-            border: 1px solid #aaa;
-            padding: 6px 8px;
-            text-align: left;
-        }
-        th {
-            background-color: #eee;
-        }
-        h2 {
-            margin-top: 0;
-        }
-        .form-block {
-            margin-bottom: 20px;
-            padding: 10px;
-            border: 1px solid #ccc;
-            background: #f9f9f9;
-        }
-    </style>
-</head>
-<body>
+{% extends "base.html" %}
 
-<h1>Zgłoszenia i historia oddań</h1>
-<p><a href="/dawca">⬅ Powrót do panelu dawcy</a></p>
+{% block title %}Zgłoszenia i historia{% endblock %}
 
-<div class="container">
+{% block content %}
 
-    <!-- LEWA KOLUMNA: ZGŁOSZENIA + FORMULARZ -->
-    <div class="column">
-        <h2>Zgłoszenia</h2>
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h1 class="fw-bold">Centrum donacji</h1>
+        <p class="text-muted mb-0">Planowanie i historia Twoich oddań krwi.</p>
+    </div>
+    <a href="/dawca" class="btn btn-outline-secondary">⬅ Powrót do panelu</a>
+</div>
 
-        <div class="form-block">
-            <h3>Dodaj nowe zgłoszenie</h3>
-            <form method="POST">
-                <p>
-                    Data zgłoszenia:
-                    <input type="date" name="data_zgloszenia">
-                    <small>(jeśli puste, zostanie użyta dzisiejsza data)</small>
+{% if error %}
+<div class="alert alert-danger shadow-sm mb-4" role="alert">
+    <strong>Wystąpił błąd:</strong> {{ error }}
+</div>
+{% endif %}
+
+<div class="row g-4">
+
+    <div class="col-lg-6">
+
+        <div class="card shadow mb-4 border-danger">
+            <div class="card-header bg-danger text-white">
+                <h3 class="h5 mb-0">Zaplanuj oddanie krwi</h3>
+            </div>
+            <div class="card-body bg-light">
+                <p class="small text-muted mb-3">
+                    Wyślij zgłoszenie, aby placówka wiedziała, że planujesz wizytę.
                 </p>
-                <button type="submit">Zgłoś chęć oddania</button>
-            </form>
+
+                <form method="POST" class="row g-2 align-items-end">
+                    <div class="col-md-8">
+                        <label class="form-label fw-bold">Data planowanej wizyty</label>
+                        <input type="date" name="data_zgloszenia" class="form-control" required>
+                        <div class="form-text small">Wybierz dogodny termin.</div>
+                    </div>
+                    <div class="col-md-4">
+                        <button type="submit" class="btn btn-krew w-100">
+                            Wyślij zgłoszenie
+                        </button>
+                    </div>
+                </form>
+            </div>
         </div>
 
-        {% if zgloszenia %}
-        <table>
-            <tr>
-                <th>Data zgłoszenia</th>
-                <th>Status</th>
-            </tr>
-            {% for z in zgloszenia %}
-            <tr>
-                <td>{{ z[1] }}</td>
-                <td>{{ z[2] }}</td>
+        <div class="card shadow">
+            <div class="card-header bg-white">
+                <h3 class="h5 mb-0 text-muted">Twoje aktywne zgłoszenia</h3>
+            </div>
+            <div class="card-body p-0">
+                {% if zgloszenia %}
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead class="table-light">
+                        <tr>
+                            <th>Data</th>
+                            <th>Status</th>
+                            <th class="text-end">Akcje</th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        {% for z in zgloszenia %}
+                        <tr>
+                            <td class="fw-bold">{{ z[1] }}</td>
 
-                <td>
-                    {% if z[2] == 'oczekujace' %}
-                    <form method="POST" action="/dawca/zgloszenia-oddania/usun/{{ z[0] }}">
-                        <button type="submit">Usuń</button>
-                    </form>
-                    {% else %}
-                    —
-                    {% endif %}
-                </td>
-            </tr>
-            {% endfor %}
+                            <td>
+                                {% if z[2] == 'oczekujace' %}
+                                <span class="badge bg-warning text-dark">OCZEKUJĄCE</span>
+                                {% elif z[2] == 'zrealizowane' %}
+                                <span class="badge bg-success">ZREALIZOWANE</span>
+                                {% else %}
+                                <span class="badge bg-secondary">{{ z[2] }}</span>
+                                {% endif %}
+                            </td>
 
-        </table>
-        {% else %}
-        <p>Brak zgłoszeń.</p>
-        {% endif %}
+                            <td class="text-end">
+                                {% if z[2] == 'oczekujace' %}
+                                <form method="POST" action="/dawca/zgloszenia-oddania/usun/{{ z[0] }}">
+                                    <button type="submit" class="btn btn-sm btn-outline-danger"
+                                            onclick="return confirm('Czy na pewno chcesz wycofać to zgłoszenie?');">
+                                        🗑️ Usuń
+                                    </button>
+                                </form>
+                                {% else %}
+                                <span class="text-muted small">—</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="p-4 text-center text-muted">
+                    Brak aktywnych zgłoszeń. Zaplanuj wizytę powyżej! 👆
+                </div>
+                {% endif %}
+            </div>
+        </div>
     </div>
 
-    <!-- PRAWA KOLUMNA: HISTORIA ODDAN -->
-    <div class="column">
-        <h2>Historia oddań</h2>
+    <div class="col-lg-6">
+        <div class="card shadow h-100">
+            <div class="card-header bg-dark text-white d-flex justify-content-between align-items-center">
+                <h3 class="h5 mb-0">Historia donacji</h3>
+                <span class="badge bg-secondary">{{ oddania|length }} wizyt</span>
+            </div>
 
-        {% if oddania %}
-        <table>
-            <tr>
-                <th>Grupa krwi</th>
-                <th>Ilość (ml)</th>
-                <th>Data ważności</th>
-            </tr>
-            {% for o in oddania %}
-            <tr>
-                <td>{{ o[2] }}{{ o[3] }}</td>
-                <td>{{ o[4] }}</td>
-                <td>{{ o[5] }}</td>
-            </tr>
-            {% endfor %}
-        </table>
-        {% else %}
-        <p>Brak oddań.</p>
-        {% endif %}
+            <div class="card-body p-0">
+                {% if oddania %}
+                <div class="table-responsive">
+                    <table class="table table-striped table-hover align-middle mb-0">
+                        <thead>
+                        <tr>
+                            <th>Data donacji</th>
+                            <th class="text-end">Ilość krwi</th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        {% for o in oddania %}
+                        <tr>
+                            <td>
+                                {{ o[1] }}
+                            </td>
+                            <td class="text-end">
+                                <span class="badge bg-krew fs-6">{{ o[0] }} ml</span>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="text-center py-5">
+                    <div class="mb-3 fs-1 text-muted">🩸</div>
+                    <h5 class="text-muted">Brak historii oddań</h5>
+                    <p class="text-muted small mb-0">
+                        Twoja historia pojawi się tutaj po pierwszej wizycie w punkcie krwiodawstwa.
+                    </p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
     </div>
 
 </div>
 
-</body>
-</html>
+{% endblock %}

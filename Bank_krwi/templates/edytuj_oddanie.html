@@ -1,28 +1,54 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <meta charset="UTF-8">
-    <title>Edytuj oddanie</title>
-</head>
-<body>
+{% extends "base.html" %}
 
-<h1>Edytuj oddanie</h1>
+{% block title %}Edytuj oddanie{% endblock %}
 
-<form method="POST">
-    <p>ID dawcy: <strong>{{ oddanie[1] }}</strong></p>
+{% block content %}
 
-    <p>Ilość (ml):
-        <input type="number" name="ilosc_ml" value="{{ oddanie[2] }}" required>
-    </p>
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1>Edytuj oddanie</h1>
+    <a href="/pracownik/oddania" class="btn btn-outline-secondary">⬅ Anuluj i wróć</a>
+</div>
 
-    <p>Data oddania:
-        <input type="date" name="data_oddania" value="{{ oddanie[3] }}" required>
-    </p>
+{% if error %}
+<div class="alert alert-danger shadow-sm mb-4" role="alert">
+    <strong>Uwaga!</strong> {{ error }}
+</div>
+{% endif %}
 
-    <button type="submit">Zapisz zmiany</button>
-</form>
+<div class="row justify-content-center">
+    <div class="col-md-8 col-lg-6">
+        <div class="card shadow">
+            <div class="card-header bg-krew text-white">
+                <h3 class="h5 mb-0">Parametry donacji</h3>
+            </div>
 
-<p><a href="/pracownik/oddania">⬅ Powrót</a></p>
+            <div class="card-body p-4">
+                <form method="POST">
 
-</body>
-</html>
+                    <div class="mb-3">
+                        <label class="form-label text-muted">ID dawcy</label>
+                        <input type="text" class="form-control bg-light" value="#{{ oddanie[1] }}" disabled readonly>
+                        <div class="form-text">Przypisanie do dawcy jest stałe.</div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Ilość pobranej krwi (ml)</label>
+                        <input type="number" name="ilosc_ml" value="{{ oddanie[2] }}" class="form-control" required min="1" placeholder="Standardowo 450ml">
+                    </div>
+
+                    <div class="mb-4">
+                        <label class="form-label fw-bold">Data oddania</label>
+                        <input type="date" name="data_oddania" value="{{ oddanie[3] }}" class="form-control" required>
+                    </div>
+
+                    <div class="d-grid">
+                        <button type="submit" class="btn btn-krew btn-lg">Zapisz zmiany</button>
+                    </div>
+
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}

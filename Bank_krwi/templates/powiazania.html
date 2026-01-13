@@ -1,0 +1,81 @@
+{% extends "base.html" %}
+
+{% block title %}Logistyka - Powiązania{% endblock %}
+
+{% block content %}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h1 class="fw-bold">Historia dystrybucji</h1>
+        <p class="text-muted mb-0">Rejestr przekazania krwi do placówek medycznych.</p>
+    </div>
+    <a href="/pracownik" class="btn btn-outline-secondary">⬅ Powrót do panelu</a>
+</div>
+
+<div class="card shadow">
+    <div class="card-header bg-krew text-white">
+        <h3 class="h5 mb-0">Połączenia: Oddania ➡ Zapotrzebowania</h3>
+    </div>
+
+    <div class="card-body p-0">
+        {% if powiazania %}
+        <div class="table-responsive">
+            <table class="table table-hover table-striped align-middle mb-0">
+                <thead class="table-dark">
+                <tr>
+                    <th>Źródło (Oddanie)</th>
+                    <th class="text-center">Przekazana ilość</th>
+                    <th>Cel (Szpital / Zapotrzebowanie)</th>
+                </tr>
+                </thead>
+                <tbody>
+                {% for p in powiazania %}
+                <tr>
+                    <td>
+                        <div class="d-flex align-items-center">
+                            <div class="bg-light rounded p-2 me-3 text-secondary border">
+                                🩸
+                            </div>
+                            <div>
+                                <strong>Donacja #{{ p[0] }}</strong><br>
+                                <small class="text-muted">Data: {{ p[1] }}</small>
+                            </div>
+                        </div>
+                    </td>
+
+                    <td class="text-center">
+                        <div class="d-flex flex-column align-items-center justify-content-center">
+                            <span class="badge bg-krew fs-6 mb-1">{{ p[3] }} ml</span>
+                            <span class="text-muted small">przekazano do </span>
+                        </div>
+                    </td>
+
+                    <td>
+                        <div class="d-flex align-items-center">
+                            <div class="bg-light rounded p-2 me-3 text-secondary border">
+                                🏥
+                            </div>
+                            <div>
+                                <strong>{{ p[6] }}</strong><br>
+                                <small class="text-muted">Zlecenie #{{ p[4] }} (z dn. {{ p[5] }})</small>
+                            </div>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="text-center py-5">
+            <div class="mb-3">
+                <span class="display-4 text-muted">🔗</span>
+            </div>
+            <h4 class="text-muted">Brak powiązań w systemie</h4>
+            <p class="text-muted small">Żadna jednostka krwi nie została jeszcze przypisana do konkretnego zapotrzebowania.</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+{% endblock %}

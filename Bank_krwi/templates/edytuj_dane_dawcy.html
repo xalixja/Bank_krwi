@@ -1,35 +1,57 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <meta charset="UTF-8">
-    <title>Edytuj dane dawcy</title>
-</head>
-<body>
+{% extends "base.html" %}
 
-<h1>Edytuj swoje dane</h1>
+{% block title %}Edytuj dane dawcy{% endblock %}
 
-<form method="POST">
+{% block content %}
 
-    <p>Imię:
-        <input type="text" name="imie" value="{{ imie }}" required>
-    </p>
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1>Edycja profilu</h1>
+    <a href="/dawca/dane" class="btn btn-outline-secondary">⬅ Anuluj i wróć</a>
+</div>
 
-    <p>Nazwisko:
-        <input type="text" name="nazwisko" value="{{ nazwisko }}" required>
-    </p>
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card shadow">
+            <div class="card-header bg-krew text-white">
+                <h3 class="h5 mb-0">Zaktualizuj swoje dane</h3>
+            </div>
 
-    <p>PESEL:
-        <input type="text" name="pesel" value="{{ pesel }}" required>
-    </p>
+            <div class="card-body p-4">
+                <form method="POST" class="row g-3">
 
-    <p>Kontakt:
-        <input type="text" name="kontakt" value="{{ kontakt }}" required>
-    </p>
+                    <div class="col-md-6">
+                        <label class="form-label fw-bold">Imię</label>
+                        <input type="text" name="imie" value="{{ imie }}" class="form-control" required placeholder="np. Jan">
+                    </div>
 
-    <button type="submit">Zapisz zmiany</button>
-</form>
+                    <div class="col-md-6">
+                        <label class="form-label fw-bold">Nazwisko</label>
+                        <input type="text" name="nazwisko" value="{{ nazwisko }}" class="form-control" required placeholder="np. Kowalski">
+                    </div>
 
-<p><a href="/dawca/dane">⬅ Powrót</a></p>
+                    <div class="col-md-6">
+                        <label class="form-label fw-bold">PESEL</label>
+                        <input type="text" name="pesel" value="{{ pesel }}" class="form-control" required maxlength="11">
+                        <div class="form-text">Numer PESEL służy do identyfikacji w systemie medycznym.</div>
+                    </div>
 
-</body>
-</html>
+                    <div class="col-md-6">
+                        <label class="form-label fw-bold">Kontakt</label>
+                        <input type="text" name="kontakt" value="{{ kontakt }}" class="form-control" required placeholder="Nr telefonu lub email">
+                    </div>
+
+                    <div class="col-12 mt-4">
+                        <hr class="text-muted">
+                    </div>
+
+                    <div class="col-12 text-end">
+                        <button type="submit" class="btn btn-krew px-5">Zapisz zmiany</button>
+                    </div>
+
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}

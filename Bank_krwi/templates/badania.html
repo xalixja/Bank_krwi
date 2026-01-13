@@ -1,64 +1,123 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <meta charset="UTF-8">
-    <title>Badania</title>
-</head>
-<body>
+{% extends "base.html" %}
 
-<h1>Badania krwi</h1>
-<p><a href="/pracownik">⬅ Powrót do panelu</a></p>
+{% block title %}Badania krwi{% endblock %}
 
-<h2>Dodaj badanie</h2>
-<form method="POST">
-    <p>ID oddania: <input type="number" name="id_oddania" required></p>
-    <p>Rodzaj badania: <input type="text" name="rodzaj" required></p>
-    <p>Wynik:
-        <select name="wynik">
-            <option value="negatywny">negatywny</option>
-            <option value="pozytywny">pozytywny</option>
-        </select>
-    </p>
-    <p>Data badania: <input type="date" name="data_badania" required></p>
-    <button type="submit">Dodaj</button>
-</form>
+{% block content %}
 
-<h2>Lista badań</h2>
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1>Badania krwi</h1>
+    <a href="/pracownik" class="btn btn-outline-secondary">⬅ Powrót do panelu</a>
+</div>
 
-<table border="1" cellpadding="6">
-    <tr>
-        <th>ID oddania</th>
-        <th>Dawca</th>
-        <th>Rodzaj</th>
-        <th>Wynik</th>
-        <th>Data</th>
-        <th>Akcje</th>
-    </tr>
+<div class="row mb-4">
+    <div class="col-md-6">
+        <div class="card text-white bg-krew mb-3 shadow-sm">
+            <div class="card-body">
+                <h5 class="card-title">Wyniki pozytywne (+)</h5>
+                <p class="fs-2 fw-bold mb-0">{{ pozytywne }}</p>
+                <small>Wymagają kontaktu z dawcą</small>
+            </div>
+        </div>
+    </div>
 
-    {% for b in badania %}
-    <tr>
-        <td>{{ b[1] }}</td>
-        <td>{{ b[2] }}</td>
-        <td>{{ b[3] }}</td>
-        <td
-                {% if b[4] == 'negatywny' %}
-        style="color: green; font-weight: bold;"
-        {% else %}
-        style="color: red; font-weight: bold;"
-        {% endif %}
-        >
-        {{ b[4] }}
-        </td>
-        <td>{{ b[5] }}</td>
-        <td>
-            {% if b[6] == id_pracownika %}
-            <a href="/pracownik/badania/edytuj/{{ b[0] }}">Edytuj</a>
-            <a href="/pracownik/badania/usun/{{ b[0] }}">Usuń</a>
-            {% endif %}
-        </td>
-    </tr>
-    {% endfor %}
-</table>
+    <div class="col-md-6">
+        <div class="card text-white bg-success mb-3 shadow-sm">
+            <div class="card-body">
+                <h5 class="card-title">Wyniki negatywne (-)</h5>
+                <p class="fs-2 fw-bold mb-0">{{ negatywne }}</p>
+                <small>Krew bezpieczna do użytku</small>
+            </div>
+        </div>
+    </div>
+</div>
 
-</body>
-</html>
+<div class="card shadow mb-5">
+    <div class="card-header bg-krew text-white">
+        <h3 class="h5 mb-0">Dodaj nowe badanie</h3>
+    </div>
+    <div class="card-body">
+        <form method="POST" class="row g-3 align-items-end">
+
+            <div class="col-md-3">
+                <label class="form-label">ID oddania</label>
+                <input type="number" name="id_oddania" class="form-control" required placeholder="np. 123">
+            </div>
+
+            <div class="col-md-3">
+                <label class="form-label">Rodzaj badania</label>
+                <input type="text" name="rodzaj" class="form-control" required placeholder="np. HIV, HCV">
+            </div>
+
+            <div class="col-md-3">
+                <label class="form-label">Wynik</label>
+                <select name="wynik" class="form-select">
+                    <option value="negatywny">Negatywny (-)</option>
+                    <option value="pozytywny">Pozytywny (+)</option>
+                </select>
+            </div>
+
+            <div class="col-md-3">
+                <label class="form-label">Data badania</label>
+                <input type="date" name="data_badania" class="form-control" max="{{ today }}" required>
+            </div>
+
+            <div class="col-12 text-end mt-3">
+                <button type="submit" class="btn btn-krew px-4">Dodaj wynik</button>
+            </div>
+
+        </form>
+    </div>
+</div>
+
+<div class="card shadow-sm">
+    <div class="card-header bg-light">
+        <h3 class="h5 mb-0">Historia badań</h3>
+    </div>
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover table-striped align-middle mb-0">
+                <thead class="table-dark">
+                <tr>
+                    <th>ID oddania</th>
+                    <th>Dawca</th>
+                    <th>Rodzaj</th>
+                    <th>Wynik</th>
+                    <th>Data</th>
+                    <th>Akcje</th>
+                </tr>
+                </thead>
+
+                <tbody>
+                {% for b in badania %}
+                <tr>
+                    <td>#{{ b[1] }}</td>
+                    <td>{{ b[2] }}</td>
+                    <td>{{ b[3] }}</td>
+
+                    <td class="fw-bold {% if b[4] == 'negatywny' %}text-success{% else %}text-danger{% endif %}">
+                        {{ b[4]|upper }}
+                    </td>
+
+                    <td>{{ b[5] }}</td>
+
+                    <td>
+                        {% if b[6] == id_pracownika %}
+                        <div class="btn-group" role="group">
+                            <a href="/pracownik/badania/edytuj/{{ b[0] }}" class="btn btn-sm btn-warning">Edytuj</a>
+                            <a href="/pracownik/badania/usun/{{ b[0] }}"
+                               class="btn btn-sm btn-danger"
+                               onclick="return confirm('Czy na pewno chcesz usunąć ten wynik badania?');">Usuń</a>
+                        </div>
+                        {% else %}
+                        <span class="text-muted small">Brak uprawnień</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+{% endblock %}

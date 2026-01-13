@@ -1,60 +1,105 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <meta charset="UTF-8">
-    <title>Zapotrzebowania szpitali</title>
-</head>
-<body>
+{% extends "base.html" %}
 
-<h1>Zapotrzebowania szpitali</h1>
-<p><a href="/pracownik">⬅ Powrót do panelu</a></p>
+{% block title %}Zapotrzebowania szpitali{% endblock %}
 
-<h2>Filtruj zapotrzebowania</h2>
+{% block content %}
 
-<form method="POST" action="/pracownik/zapotrzebowania">
-    <select name="filter_status">
-        <option value="wszystkie" {% if filter_status == "wszystkie" or not filter_status %}selected{% endif %}>Wszystkie</option>
-        <option value="oczekujace" {% if filter_status == "oczekujace" %}selected{% endif %}>Oczekujące</option>
-        <option value="zrealizowane" {% if filter_status == "zrealizowane" %}selected{% endif %}>Zrealizowane</option>
-    </select>
-    <button type="submit">Filtruj</button>
-</form>
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1>Zapotrzebowania szpitali</h1>
+    <a href="/pracownik" class="btn btn-outline-secondary">⬅ Powrót do panelu</a>
+</div>
 
+<div class="card shadow-sm mb-4">
+    <div class="card-body bg-light py-3">
+        <form method="POST" action="/pracownik/zapotrzebowania" class="row g-2 align-items-center">
+            <div class="col-auto">
+                <label class="fw-bold text-muted me-2">Pokaż:</label>
+            </div>
+            <div class="col-auto">
+                <select name="filter_status" class="form-select form-select-sm" style="min-width: 200px;">
+                    <option value="wszystkie" {% if filter_status == "wszystkie" or not filter_status %}selected{% endif %}>Wszystkie zgłoszenia</option>
+                    <option value="oczekujace" {% if filter_status == "oczekujace" %}selected{% endif %}>Tylko oczekujące</option>
+                    <option value="zrealizowane" {% if filter_status == "zrealizowane" %}selected{% endif %}>Tylko zrealizowane</option>
+                </select>
+            </div>
+            <div class="col-auto">
+                <button type="submit" class="btn btn-krew btn-sm px-3">Filtruj</button>
+            </div>
+        </form>
+    </div>
+</div>
 
-<h2>Lista zapotrzebowań</h2>
+<div class="card shadow">
+    <div class="card-header bg-dark text-white">
+        <h3 class="h5 mb-0">Lista zamówień</h3>
+    </div>
 
-<table border="1" cellpadding="6">
-    <tr>
-        <th>ID</th>
-        <th>Szpital</th>
-        <th>Grupa krwi</th>
-        <th>Ilość (ml)</th>
-        <th>Status</th>
-        <th>Data wydania</th>
-        <th>Akcje</th>
-    </tr>
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover table-striped align-middle mb-0">
+                <thead class="table-light">
+                <tr>
+                    <th>ID</th>
+                    <th>Szpital</th>
+                    <th>Grupa krwi</th>
+                    <th>Ilość (ml)</th>
+                    <th>Status</th>
+                    <th>Termin / Data</th>
+                    <th class="text-end">Akcje</th>
+                </tr>
+                </thead>
+                <tbody>
+                {% for z in zapotrzebowania %}
+                <tr>
+                    <td class="text-muted small">#{{ z[0] }}</td>
 
-    {% for z in zapotrzebowania %}
-    <tr>
-        <td>{{ z[0] }}</td>
-        <td>{{ z[1] }}</td>
-        <td>{{ z[2] }}{{ z[3] }}</td>
-        <td>{{ z[4] }}</td>
-        <td>{{ z[5] }}</td>
-        <td>{{ z[6] }}</td>
+                    <td class="fw-bold">{{ z[1] }}</td>
 
-        <td>
-            {% if z[5] == 'oczekujace' %}
-            <form method="POST" action="/pracownik/zapotrzebowania/zrealizuj/{{ z[0] }}" style="display:inline;">
-                <button type="submit">Zrealizuj</button>
-            </form>
-            {% else %}
-            ✔ Zrealizowane
-            {% endif %}
-        </td>
-    </tr>
-    {% endfor %}
-</table>
+                    <td>
+                        <span class="badge bg-krew fs-6">{{ z[2] }}{{ z[3] }}</span>
+                    </td>
 
-</body>
-</html>
+                    <td>{{ z[4] }} ml</td>
+
+                    <td>
+                        {% if z[5] == 'oczekujace' %}
+                        <span class="badge bg-warning text-dark">OCZEKUJĄCE</span>
+                        {% elif z[5] == 'zrealizowane' %}
+                        <span class="badge bg-success">ZREALIZOWANE</span>
+                        {% else %}
+                        <span class="badge bg-secondary">{{ z[5] }}</span>
+                        {% endif %}
+                    </td>
+
+                    <td>{{ z[6] }}</td>
+
+                    <td class="text-end">
+                        {% if z[5] == 'oczekujace' %}
+                        <form method="POST" action="/pracownik/zapotrzebowania/zrealizuj/{{ z[0] }}" class="d-inline">
+                            <button type="submit"
+                                    class="btn btn-success btn-sm shadow-sm"
+                                    onclick="return confirm('Czy na pewno chcesz zrealizować to zapotrzebowanie? Spowoduje to pobranie krwi z magazynu.');">
+                                ✅ Zrealizuj
+                            </button>
+                        </form>
+                        {% else %}
+                        <span class="text-muted small fst-italic">
+                                <span class="text-success">✔</span> Wysłano
+                            </span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="7" class="text-center py-4 text-muted">
+                        Brak zapotrzebowań spełniających kryteria filtra.
+                    </td>
+                </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+{% endblock %}

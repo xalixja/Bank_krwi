@@ -1,57 +1,141 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <meta charset="UTF-8">
-    <title>Panel szpitala</title>
-</head>
-<body>
+{% extends "base.html" %}
 
-<h1>Panel szpitala</h1>
+{% block title %}Panel Szpitala{% endblock %}
 
-<h2>{{ nazwa }}</h2>
-<p><strong>Adres:</strong> {{ adres }}</p>
+{% block content %}
 
-<h3 onclick="toggleEditUser()" style="cursor:pointer; color:blue;">
-    Edytuj dane użytkownika
-</h3>
-
-<div id="editUserBox" style="display:none; border:1px solid #aaa; padding:10px; margin-bottom:20px;">
-    <form method="POST" action="/uzytkownik/edytuj">
-        <p>Nowy login:
-            <input type="text" name="login" value="{{ session['login'] if session['login'] else '' }}" required>
-        </p>
-
-        <p>Nowe hasło:
-            <input type="password" name="haslo" placeholder="Pozostaw puste, aby nie zmieniać">
-        </p>
-
-        <button type="submit">Zapisz zmiany</button>
-    </form>
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h1 class="fw-bold">Panel Szpitala</h1>
+        <p class="text-muted mb-0">Zalogowano jako: <strong class="text-danger">{{ nazwa }}</strong></p>
+    </div>
+    <a href="/logout" class="btn btn-outline-secondary">🚪 Wyloguj</a>
 </div>
 
-<script>
-    function toggleEditUser() {
-        const box = document.getElementById("editUserBox");
-        box.style.display = box.style.display === "none" ? "block" : "none";
-    }
-</script>
+<div class="row g-3 mb-5">
 
-<p><a href="/szpital/dane" style="font-weight:bold;">Dane szpitala</a></p>
+    <div class="col-md-4">
+        <div class="card shadow-sm border-start border-4 border-warning h-100">
+            <div class="card-body d-flex align-items-center">
+                <div class="fs-1 me-3">⏳</div>
+                <div>
+                    <h2 class="mb-0 fw-bold text-dark">{{ oczekujace }}</h2>
+                    <p class="text-muted small mb-0">Oczekujące zapotrzebowania</p>
+                </div>
+            </div>
+        </div>
+    </div>
 
-<h3>Statystyki zapotrzebowań</h3>
-<ul>
-    <li><strong>Oczekujące:</strong> {{ oczekujace }}</li>
-    <li><strong>Zrealizowane:</strong> {{ zrealizowane }}</li>
-    <li><strong>Wszystkie:</strong> {{ wszystkie }}</li>
-</ul>
+    <div class="col-md-4">
+        <div class="card shadow-sm border-start border-4 border-success h-100">
+            <div class="card-body d-flex align-items-center">
+                <div class="fs-1 me-3">✅</div>
+                <div>
+                    <h2 class="mb-0 fw-bold text-success">{{ zrealizowane }}</h2>
+                    <p class="text-muted small mb-0">Zrealizowane zamówienia</p>
+                </div>
+            </div>
+        </div>
+    </div>
 
-<h3>Moduły</h3>
-<ul>
-    <li><a href="/szpital/zapotrzebowania">Zapotrzebowania</a></li>
-    <li><a href="/szpital/zapotrzebowania/dodaj">Dodaj zapotrzebowanie</a></li>
-</ul>
+    <div class="col-md-4">
+        <div class="card shadow-sm border-start border-4 border-secondary h-100">
+            <div class="card-body d-flex align-items-center">
+                <div class="fs-1 me-3">📋</div>
+                <div>
+                    <h2 class="mb-0 fw-bold text-secondary">{{ wszystkie }}</h2>
+                    <p class="text-muted small mb-0">Łącznie zamówień</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
 
-<p><a href="/logout">Wyloguj</a></p>
+<div class="row g-4">
 
-</body>
-</html>
+    <div class="col-lg-8">
+        <div class="card shadow mb-4">
+            <div class="card-header bg-krew text-white">
+                <h5 class="mb-0">🚑 Zarządzanie krwią</h5>
+            </div>
+            <div class="card-body">
+                <div class="row g-3">
+
+                    <div class="col-md-6">
+                        <a href="/szpital/zapotrzebowania/dodaj" class="card text-decoration-none h-100 border-danger bg-light">
+                            <div class="card-body text-center p-4">
+                                <h5 class="fw-bold text-danger">Złóż zapotrzebowanie</h5>
+                                <small class="text-muted">Zamów krew</small>
+                            </div>
+                        </a>
+                    </div>
+
+                    <div class="col-md-6">
+                        <a href="/szpital/zapotrzebowania" class="card text-decoration-none h-100 border-secondary">
+                            <div class="card-body text-center p-4">
+                                <h5 class="fw-bold text-dark">Historia zamówień</h5>
+                                <small class="text-muted">Przeglądaj statusy wniosków</small>
+                            </div>
+                        </a>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-4">
+
+        <div class="card shadow-sm mb-4">
+            <div class="card-header bg-light">
+                <h6 class="mb-0 fw-bold">Dane placówki</h6>
+            </div>
+            <div class="card-body text-center">
+                <div class="mb-3">
+                    <span class="display-4">🏥</span>
+                </div>
+                <h5 class="card-title">{{ nazwa }}</h5>
+                <p class="card-text text-muted small">
+                    📍 {{ adres }}
+                </p>
+                <a href="/szpital/dane" class="btn btn-outline-secondary w-100 btn-sm">
+                    Edytuj dane placówki
+                </a>
+            </div>
+        </div>
+
+        <div class="card shadow-sm bg-light">
+            <div class="card-body">
+                <h6 class="card-title">Konto użytkownika</h6>
+                <p class="small text-muted">Zarządzaj dostępem do systemu.</p>
+
+                <button class="btn btn-krew w-100 mb-3" type="button" data-bs-toggle="collapse" data-bs-target="#editUserBox">
+                    Edytuj dane logowania
+                </button>
+
+                <div class="collapse" id="editUserBox">
+                    <div class="card card-body border-0 shadow-sm">
+                        <form method="POST" action="/uzytkownik/edytuj">
+                            <div class="mb-3">
+                                <label class="form-label small fw-bold">Login</label>
+                                <input type="text" name="login" class="form-control" value="{{ session['login'] if session['login'] else '' }}" required>
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="form-label small fw-bold">Nowe hasło</label>
+                                <input type="password" name="haslo" class="form-control" placeholder="Zostaw puste by nie zmieniać">
+                            </div>
+
+                            <div class="d-grid">
+                                <button type="submit" class="btn btn-success btn-sm">Zapisz zmiany</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+{% endblock %}

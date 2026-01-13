@@ -1,49 +1,108 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <meta charset="UTF-8">
-    <title>Oddania krwi</title>
-</head>
-<body>
+{% extends "base.html" %}
 
-<h1>Oddania krwi</h1>
-<p><a href="/pracownik">⬅ Powrót do panelu</a></p>
+{% block title %}Oddania krwi{% endblock %}
 
-<h2>Dodaj oddanie</h2>
-<form method="POST">
-    <p>ID dawcy: <input type="number" name="id_dawcy" required></p>
-    <p>Ilość (ml): <input type="number" name="ilosc_ml" required></p>
-    <p>Data oddania: <input type="date" name="data_oddania" required></p>
-    <button type="submit">Dodaj</button>
-</form>
+{% block content %}
 
-<h2>Lista oddań</h2>
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1>Rejestr oddań krwi</h1>
+    <a href="/pracownik" class="btn btn-outline-secondary">⬅ Powrót do panelu</a>
+</div>
 
-<table border="1" cellpadding="6">
-    <tr>
-        <th>Dawca</th>
-        <th>Grupa</th>
-        <th>Ilość (ml)</th>
-        <th>Data oddania</th>
-        <th>Data ważności</th>
-        <th>Akcje</th>
-    </tr>
+{% if error %}
+<div class="alert alert-danger shadow-sm mb-4" role="alert">
+    <strong>Wystąpił błąd:</strong> {{ error }}
+</div>
+{% endif %}
 
-    {% for o in oddania %}
-    <tr>
-        <td>{{ o[1] }}</td>
-        <td>{{ o[2] }}{{ o[3] }}</td>
-        <td>{{ o[4] }}</td>   <!-- ilosc_ml -->
-        <td>{{ o[5] }}</td>   <!-- data_oddania -->
-        <td>{{ o[6] }}</td>   <!-- data_waznosci -->
-        <td>
-            <a href="/pracownik/oddania/edytuj/{{ o[0] }}">Edytuj</a> |
-            <a href="/pracownik/oddania/usun/{{ o[0] }}">Usuń</a>
-        </td>
-    </tr>
-    {% endfor %}
-</table>
+{% if srednia %}
+<div class="alert alert-info border-0 shadow-sm d-flex align-items-center mb-4">
+    <span class="fs-4 me-2">📊</span>
+    <div>
+        <strong>Statystyka:</strong> Średnia ilość oddanej krwi w rejestrze wynosi <strong>{{ srednia }} ml</strong>.
+    </div>
+</div>
+{% endif %}
 
+<div class="card shadow mb-5">
+    <div class="card-header bg-krew text-white">
+        <h3 class="h5 mb-0">Dodaj nowe oddanie</h3>
+    </div>
+    <div class="card-body">
+        <form method="POST" class="row g-3 align-items-end">
 
-</body>
-</html>
+            <div class="col-md-4">
+                <label class="form-label">ID Dawcy</label>
+                <input type="number" name="id_dawcy" class="form-control" required placeholder="np. 5">
+            </div>
+
+            <div class="col-md-3">
+                <label class="form-label">Ilość (ml)</label>
+                <input type="number" name="ilosc_ml" class="form-control" required placeholder="Standardowo 450">
+            </div>
+
+            <div class="col-md-3">
+                <label class="form-label">Data oddania</label>
+                <input type="date" name="data_oddania" class="form-control" required>
+            </div>
+
+            <div class="col-md-2">
+                <div class="d-grid">
+                    <button type="submit" class="btn btn-krew">Dodaj</button>
+                </div>
+            </div>
+
+        </form>
+    </div>
+</div>
+
+<div class="card shadow-sm">
+    <div class="card-header bg-light">
+        <h3 class="h5 mb-0">Historia donacji</h3>
+    </div>
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover table-striped align-middle mb-0">
+                <thead class="table-dark">
+                <tr>
+                    <th>Dawca</th>
+                    <th>Grupa krwi</th>
+                    <th>Ilość</th>
+                    <th>Data oddania</th>
+                    <th>Data ważności</th>
+                    <th>Akcje</th>
+                </tr>
+                </thead>
+
+                <tbody>
+                {% for o in oddania %}
+                <tr>
+                    <td class="fw-bold">{{ o[1] }}</td>
+
+                    <td><span class="badge bg-krew">{{ o[2] }}{{ o[3] }}</span></td>
+
+                    <td>{{ o[4] }} ml</td>
+                    <td>{{ o[5] }}</td>
+                    <td class="text-muted small">{{ o[6] }}</td>
+
+                    <td>
+                        <div class="btn-group" role="group">
+                            <a href="/pracownik/oddania/edytuj/{{ o[0] }}" class="btn btn-sm btn-warning">Edytuj</a>
+                            <a href="/pracownik/oddania/usun/{{ o[0] }}"
+                               class="btn btn-sm btn-danger"
+                               onclick="return confirm('Czy na pewno usunąć ten wpis o oddaniu?');">Usuń</a>
+                        </div>
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="6" class="text-center py-4 text-muted">Brak zarejestrowanych oddań w systemie.</td>
+                </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+{% endblock %}

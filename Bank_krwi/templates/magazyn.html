@@ -1,133 +1,213 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <meta charset="UTF-8">
-    <title>Magazyn krwi</title>
-    <style>
-        .status-dostepne { background-color: #c8f7c5; }   /* zielony */
-        .status-zuzyte { background-color: #f7c5c5; }     /* czerwony */
-        .status-przeterminowane { background-color: #f7e6c5; } /* pomarańczowy */
-    </style>
-</head>
-<body>
+{% extends "base.html" %}
 
-<h1>Magazyn krwi</h1>
-<p><a href="/pracownik">⬅ Powrót do panelu</a></p>
+{% block title %}Magazyn krwi{% endblock %}
 
-<h2>Filtruj</h2>
+{% block content %}
 
-<form method="POST">
-    <label>Grupa krwi:</label>
-    <select name="grupa">
-        <option value="">-- wszystkie --</option>
-        <option value="A">A</option>
-        <option value="B">B</option>
-        <option value="AB">AB</option>
-        <option value="0">0</option>
-    </select>
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1>Stan magazynowy</h1>
+    <a href="/pracownik" class="btn btn-outline-secondary">⬅ Powrót do panelu</a>
+</div>
 
-    <label>Rh:</label>
-    <select name="rh">
-        <option value="">-- wszystkie --</option>
-        <option value="+">+</option>
-        <option value="-">-</option>
-    </select>
+<div class="card shadow-sm mb-5">
+    <div class="card-body bg-light">
+        <h5 class="card-title mb-3">Filtrowanie zasobów</h5>
+        <form method="POST" class="row g-3 align-items-end">
 
-    <button type="submit">Filtruj</button>
-</form>
+            <div class="col-md-4">
+                <label class="form-label fw-bold">Grupa krwi</label>
+                <select name="grupa" class="form-select">
+                    <option value="">-- wszystkie --</option>
+                    <option value="A">A</option>
+                    <option value="B">B</option>
+                    <option value="AB">AB</option>
+                    <option value="0">0</option>
+                </select>
+            </div>
 
-<h2>Zawartość magazynu</h2>
+            <div class="col-md-4">
+                <label class="form-label fw-bold">Czynnik Rh</label>
+                <select name="rh" class="form-select">
+                    <option value="">-- wszystkie --</option>
+                    <option value="+">Rh+ (dodatni)</option>
+                    <option value="-">Rh- (ujemny)</option>
+                </select>
+            </div>
 
-<table border="1" cellpadding="6">
-    <tr>
-        <th>ID</th><th>Dawca</th><th>Grupa</th><th>Ilość początkowa</th>
-        <th>Ilość pozostała</th><th>Status</th><th>Data ważności</th>
-    </tr>
+            <div class="col-md-4">
+                <div class="d-grid">
+                    <button type="submit" class="btn btn-krew">Zastosuj filtry</button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
 
-    {% for m in dostepne %}
-    <tr>
-        <td>{{ m[0] }}</td>
-        <td>{{ m[1] }}</td>
-        <td>{{ m[2] }}{{ m[3] }}</td>
-        <td>{{ m[4] }}</td>
-        <td>{{ m[5] }}</td>
-        <td>{{ m[6] }}</td>
-        <td>{{ m[7] }}</td>
-    </tr>
-    {% endfor %}
-</table>
+<div class="card shadow mb-5 border-success">
+    <div class="card-header bg-success text-white d-flex justify-content-between align-items-center">
+        <h3 class="h5 mb-0">Dostępne w magazynie</h3>
+        <span class="badge bg-white text-success">{{ dostepne|length }} szt.</span>
+    </div>
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover table-striped align-middle mb-0">
+                <thead class="table-dark">
+                <tr>
+                    <th>ID</th>
+                    <th>Dawca</th>
+                    <th>Grupa</th>
+                    <th>Ilość (ml)</th>
+                    <th>Status</th>
+                    <th>Data ważności</th>
+                </tr>
+                </thead>
+                <tbody>
+                {% for m in dostepne %}
+                <tr>
+                    <td>#{{ m[0] }}</td>
+                    <td>{{ m[1] }}</td>
+                    <td>
+                        <span class="badge bg-krew fs-6">{{ m[2] }}{{ m[3] }}</span>
+                    </td>
+                    <td>
+                        <div class="d-flex align-items-center">
+                            <span class="me-2 fw-bold">{{ m[5] }}</span>
+                            <span class="text-muted small">/ {{ m[4] }}</span>
+                        </div>
+                    </td>
+                    <td><span class="badge bg-success text-white">DOSTĘPNA</span></td>
+                    <td class="fw-bold">{{ m[7] }}</td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="6" class="text-center py-4 text-muted">Brak dostępnych jednostek krwi spełniających kryteria.</td>
+                </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
 
-<h2>Przeterminowane jednostki krwi</h2>
+<div class="row">
+    <div class="col-12 mb-4">
+        <div class="card shadow-sm border-danger">
+            <div class="card-header bg-danger text-white">
+                <h3 class="h5 mb-0">Przeterminowane (Utylizacja)</h3>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover table-danger align-middle mb-0">
+                        <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Dawca</th>
+                            <th>Grupa</th>
+                            <th>Pozostało</th>
+                            <th>Status</th>
+                            <th>Data ważności</th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        {% for p in przeterminowane %}
+                        <tr>
+                            <td>{{ p[0] }}</td>
+                            <td>{{ p[1] }}</td>
+                            <td class="fw-bold">{{ p[2] }}{{ p[3] }}</td>
+                            <td>{{ p[5] }} ml</td>
+                            <td class="fw-bold text-danger">{{ p[6]|upper }}</td>
+                            <td class="text-danger fw-bold">{{ p[7] }}</td>
+                        </tr>
+                        {% else %}
+                        <tr class="table-light">
+                            <td colspan="6" class="text-center text-muted">Brak przeterminowanych jednostek.</td>
+                        </tr>
+                        {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
 
-<table border="1" cellpadding="6">
-    <tr>
-        <th>ID</th><th>Dawca</th><th>Grupa</th><th>Ilość początkowa</th>
-        <th>Ilość pozostała</th><th>Status</th><th>Data ważności</th>
-    </tr>
+    <div class="col-12 mb-4">
+        <div class="card shadow-sm border-warning">
+            <div class="card-header bg-warning text-dark">
+                <h3 class="h5 mb-0">Odrzucone (Złe wyniki badań)</h3>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover table-warning align-middle mb-0">
+                        <thead>
+                        <tr>
+                            <th>ID Oddania</th>
+                            <th>Dawca</th>
+                            <th>Grupa</th>
+                            <th>Ilość</th>
+                            <th>Status</th>
+                            <th>Data</th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        {% for o in odrzucone %}
+                        <tr>
+                            <td>{{ o[0] }}</td>
+                            <td>{{ o[1] }}</td>
+                            <td class="fw-bold">{{ o[2] }}{{ o[3] }}</td>
+                            <td>{{ o[5] }} ml</td>
+                            <td class="fw-bold text-danger">{{ o[6]|upper }}</td>
+                            <td>{{ o[7] }}</td>
+                        </tr>
+                        {% else %}
+                        <tr class="table-light">
+                            <td colspan="6" class="text-center text-muted">Brak odrzuconych jednostek.</td>
+                        </tr>
+                        {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
 
-    {% for p in przeterminowane %}
-    <tr style="background:#ffe0e0;">
-        <td>{{ p[0] }}</td>
-        <td>{{ p[1] }}</td>
-        <td>{{ p[2] }}{{ p[3] }}</td>
-        <td>{{ p[4] }}</td>
-        <td>{{ p[5] }}</td>
-        <td style="color:red; font-weight:bold;">{{ p[6] }}</td>
-        <td style="color:red;">{{ p[7] }}</td>
-    </tr>
-    {% endfor %}
-</table>
+    <div class="col-12 mb-4">
+        <div class="card shadow-sm">
+            <div class="card-header bg-secondary text-white">
+                <h3 class="h5 mb-0">Archiwum (Zużyte)</h3>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover table-secondary align-middle mb-0 text-muted">
+                        <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Dawca</th>
+                            <th>Grupa</th>
+                            <th>Zużyto</th>
+                            <th>Status</th>
+                            <th>Data ważności</th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        {% for z in zuzyte %}
+                        <tr>
+                            <td>{{ z[0] }}</td>
+                            <td>{{ z[1] }}</td>
+                            <td>{{ z[2] }}{{ z[3] }}</td>
+                            <td>{{ z[4] }} ml</td> <td>{{ z[6] }}</td>
+                            <td>{{ z[7] }}</td>
+                        </tr>
+                        {% else %}
+                        <tr class="table-light">
+                            <td colspan="6" class="text-center text-muted">Brak danych archiwalnych.</td>
+                        </tr>
+                        {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
 
-<h2>Jednostki odrzucone (złe badania)</h2>
-
-<table border="1" cellpadding="6">
-    <tr>
-        <th>ID oddania</th>
-        <th>Dawca</th>
-        <th>Grupa</th>
-        <th>Ilość początkowa</th>
-        <th>Ilość pozostała</th>
-        <th>Status</th>
-        <th>Data ważności</th>
-    </tr>
-
-    {% for o in odrzucone %}
-    <tr style="background:#ffcccc;">
-        <td>{{ o[0] }}</td>
-        <td>{{ o[1] }}</td>
-        <td>{{ o[2] }}{{ o[3] }}</td>
-        <td>{{ o[4] }}</td>
-        <td>{{ o[5] }}</td>
-        <td style="color:red; font-weight:bold;">{{ o[6] }}</td>
-        <td>{{ o[7] }}</td>
-    </tr>
-    {% endfor %}
-</table>
-
-
-<h2>Zużyte jednostki krwi</h2>
-
-<table border="1" cellpadding="6">
-    <tr>
-        <th>ID</th><th>Dawca</th><th>Grupa</th><th>Ilość początkowa</th>
-        <th>Ilość pozostała</th><th>Status</th><th>Data ważności</th>
-    </tr>
-
-    {% for z in zuzyte %}
-    <tr style="background:#e0e0e0;">
-        <td>{{ z[0] }}</td>
-        <td>{{ z[1] }}</td>
-        <td>{{ z[2] }}{{ z[3] }}</td>
-        <td>{{ z[4] }}</td>
-        <td>{{ z[5] }}</td>
-        <td>{{ z[6] }}</td>
-        <td>{{ z[7] }}</td>
-    </tr>
-    {% endfor %}
-</table>
-
-
-
-
-</body>
-</html>
+{% endblock %}

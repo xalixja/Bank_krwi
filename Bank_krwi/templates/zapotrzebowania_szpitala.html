@@ -1,93 +1,129 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <meta charset="UTF-8">
-    <title>Zapotrzebowania szpitala</title>
-</head>
-<body>
+{% extends "base.html" %}
 
-<h1>Zapotrzebowania szpitala</h1>
-<p><a href="/szpital">⬅ Powrót do panelu</a></p>
+{% block title %}Zapotrzebowania szpitala{% endblock %}
 
-<h2>Lista zapotrzebowań</h2>
+{% block content %}
 
-<table border="1" cellpadding="6">
-    <tr>
-        <th>ID</th>
-        <th>Grupa krwi</th>
-        <th>Ilość (ml)</th>
-        <th>Status</th>
-        <th>Data wydania</th>
-        <th>Akcje</th>
-    </tr>
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1>Zapotrzebowania szpitala</h1>
+    <a href="/szpital" class="btn btn-outline-secondary">⬅ Powrót do panelu</a>
+</div>
 
-    {% for z in zapotrzebowania %}
-    <tr>
-        <td>{{ z[0] }}</td>
-        <td>{{ z[1] }}{{ z[2] }}</td>
-        <td>{{ z[3] }}</td>
+<div class="card shadow">
+    <div class="card-header bg-dark text-white">
+        <h3 class="h5 mb-0">Twoje zamówienia na krew</h3>
+    </div>
 
-        <td {% if z[4] == 'oczekujace' %}
-        style="color: orange; font-weight: bold;"
-        {% else %}
-        style="color: green; font-weight: bold;"
-        {% endif %}
-        >
-        {{ z[4] }}
-        </td>
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-light">
+                <tr>
+                    <th>ID</th>
+                    <th>Grupa krwi</th>
+                    <th>Ilość (ml)</th>
+                    <th>Status</th>
+                    <th>Data wydania</th>
+                    <th class="text-end">Akcje</th>
+                </tr>
+                </thead>
+                <tbody>
+                {% for z in zapotrzebowania %}
+                <tr>
+                    <td class="text-muted small">#{{ z[0] }}</td>
 
-        <td>{{ z[5] }}</td>
+                    <td>
+                        <span class="badge bg-krew fs-6">{{ z[1] }}{{ z[2] }}</span>
+                    </td>
 
-        <td>
-            {% if z[4] == 'oczekujace' %}
-            <button onclick="toggleEdit({{ z[0] }})">Edytuj</button>
+                    <td class="fw-bold">{{ z[3] }}</td>
 
-            <form method="POST" action="/szpital/zapotrzebowania/usun/{{ z[0] }}" style="display:inline;">
-                <button type="submit">Usuń</button>
-            </form>
-            {% else %}
-            —
-            {% endif %}
-        </td>
-    </tr>
+                    <td>
+                        {% if z[4] == 'oczekujace' %}
+                        <span class="badge bg-warning text-dark">OCZEKUJĄCE</span>
+                        {% else %}
+                        <span class="badge bg-success">ZREALIZOWANE</span>
+                        {% endif %}
+                    </td>
 
-    <!-- FORMULARZ EDYCJI -->
-    {% if z[4] == 'oczekujace' %}
-    <tr id="edit-{{ z[0] }}" style="display:none;">
-        <td colspan="6" style="background:#f3f3f3; padding:10px;">
-            <form method="POST" action="/szpital/zapotrzebowania/edytuj/{{ z[0] }}">
-                <p>Grupa krwi:
-                    <select name="grupa">
-                        <option value="A" {% if z[1]=='A' %}selected{% endif %}>A</option>
-                        <option value="B" {% if z[1]=='B' %}selected{% endif %}>B</option>
-                        <option value="AB" {% if z[1]=='AB' %}selected{% endif %}>AB</option>
-                        <option value="0" {% if z[1]=='0' %}selected{% endif %}>0</option>
-                    </select>
-                </p>
+                    <td>{{ z[5] }}</td>
 
-                <p>Rh:
-                    <select name="rh">
-                        <option value="+" {% if z[2]=='+' %}selected{% endif %}>+</option>
-                        <option value="-" {% if z[2]=='-' %}selected{% endif %}>-</option>
-                    </select>
-                </p>
+                    <td class="text-end">
+                        {% if z[4] == 'oczekujace' %}
+                        <button onclick="toggleEdit({{ z[0] }})" class="btn btn-sm btn-outline-primary me-1">
+                            ✏️ Edytuj
+                        </button>
 
-                <p>Ilość (ml):
-                    <input type="number" name="ilosc_ml" value="{{ z[3] }}" required>
-                </p>
+                        <form method="POST" action="/szpital/zapotrzebowania/usun/{{ z[0] }}" class="d-inline">
+                            <button type="submit"
+                                    class="btn btn-sm btn-outline-danger"
+                                    onclick="return confirm('Czy na pewno anulować to zapotrzebowanie?');">
+                                🗑️ Usuń
+                            </button>
+                        </form>
+                        {% else %}
+                        <span class="text-muted small">Zamknięte</span>
+                        {% endif %}
+                    </td>
+                </tr>
 
-                <button type="submit">Zapisz zmiany</button>
-            </form>
-        </td>
-    </tr>
-    {% endif %}
-    {% endfor %}
-</table>
+                {% if z[4] == 'oczekujace' %}
+                <tr id="edit-{{ z[0] }}" style="display:none;" class="bg-light shadow-inset">
+                    <td colspan="6" class="p-4">
+                        <div class="card border-primary">
+                            <div class="card-body">
+                                <h6 class="card-title text-primary mb-3">Edycja zamówienia #{{ z[0] }}</h6>
+
+                                <form method="POST" action="/szpital/zapotrzebowania/edytuj/{{ z[0] }}" class="row g-3 align-items-end">
+
+                                    <div class="col-md-3">
+                                        <label class="form-label small fw-bold">Grupa krwi</label>
+                                        <select name="grupa" class="form-select">
+                                            <option value="A" {% if z[1]=='A' %}selected{% endif %}>A</option>
+                                            <option value="B" {% if z[1]=='B' %}selected{% endif %}>B</option>
+                                            <option value="AB" {% if z[1]=='AB' %}selected{% endif %}>AB</option>
+                                            <option value="0" {% if z[1]=='0' %}selected{% endif %}>0</option>
+                                        </select>
+                                    </div>
+
+                                    <div class="col-md-3">
+                                        <label class="form-label small fw-bold">Czynnik Rh</label>
+                                        <select name="rh" class="form-select">
+                                            <option value="+" {% if z[2]=='+' %}selected{% endif %}>Rh+ (dodatni)</option>
+                                            <option value="-" {% if z[2]=='-' %}selected{% endif %}>Rh- (ujemny)</option>
+                                        </select>
+                                    </div>
+
+                                    <div class="col-md-3">
+                                        <label class="form-label small fw-bold">Ilość (ml)</label>
+                                        <input type="number" name="ilosc_ml" value="{{ z[3] }}" class="form-control" required min="1">
+                                    </div>
+
+                                    <div class="col-md-3 d-flex gap-2">
+                                        <button type="submit" class="btn btn-primary w-100">Zapisz</button>
+                                        <button type="button" onclick="toggleEdit({{ z[0] }})" class="btn btn-outline-secondary">Anuluj</button>
+                                    </div>
+
+                                </form>
+                            </div>
+                        </div>
+                    </td>
+                </tr>
+                {% endif %}
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
 
 <script>
     function toggleEdit(id) {
         const row = document.getElementById("edit-" + id);
-        row.style.display = row.style.display === "none" ? "table-row" : "none";
+        if (row) {
+            row.style.display = row.style.display === "none" ? "table-row" : "none";
+        }
     }
 </script>
 
+{% endblock %}

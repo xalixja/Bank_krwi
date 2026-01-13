@@ -1,42 +1,129 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <meta charset="UTF-8">
-    <title>Panel administratora</title>
-</head>
-<body>
+{% extends "base.html" %}
 
-<h1>Panel administratora</h1>
+{% block title %}Panel Administratora{% endblock %}
 
-<p><a href="/logout">Wyloguj</a></p>
+{% block content %}
 
-<h2>Statystyki systemu</h2>
-<ul>
-    <li>Użytkownicy: {{ uzytkownicy }}</li>
-    <li>Dawcy: {{ dawcy }}</li>
-    <li>Pracownicy banku krwi: {{ pracownicy }}</li>
-    <li>Szpitale: {{ szpitale }}</li>
-    <li>Oddania krwi: {{ oddania }}</li>
-    <li>Zapotrzebowania: {{ zapotrzebowania }}</li>
-    <li>Badania: {{ badania }}</li>
-</ul>
+<div class="d-flex justify-content-between align-items-center mb-5">
+    <div>
+        <h1 class="fw-bold">Panel Administratora</h1>
+        <p class="text-muted mb-0">Przegląd statystyk i zarządzanie systemem Banku Krwi.</p>
+    </div>
+    <a href="/logout" class="btn btn-outline-danger">
+        🚪 Wyloguj się
+    </a>
+</div>
 
-<h2>Moduły</h2>
-<ul>
-    <li><a href="/admin/uzytkownicy">Zarządzanie użytkownikami</a></li>
-<!--    <li><a href="/admin/dawcy">Lista dawców</a></li>-->
-<!--    <li><a href="/admin/pracownicy">Lista pracowników</a></li>-->
-<!--    <li><a href="/admin/szpitale">Lista szpitali</a></li>-->
-<!--    <li><a href="/admin/oddania">Oddania krwi</a></li>-->
-<!--    <li><a href="/admin/badania">Badania</a></li>-->
-<!--    <li><a href="/admin/zapotrzebowania">Zapotrzebowania</a></li>-->
+<h4 class="mb-3 text-secondary">👥 Użytkownicy i Placówki</h4>
+<div class="row g-3 mb-4">
 
-<!--    <li><a href="/admin/statystyki/pracownicy">Aktywność pracowników</a></li>-->
-<!--    <li><a href="/admin/statystyki/zapotrzebowania_duze">Duże zapotrzebowania</a></li>-->
-<!--    <li><a href="/admin/statystyki/stan_krwi">Stan krwi</a></li>-->
-<!--    <li><a href="/admin/statystyki/srednia_ilosc">Średnia ilość oddania</a></li>-->
-<!--    <li><a href="/admin/statystyki/badania">Statystyki badań</a></li>-->
-</ul>
+    <div class="col-md-3">
+        <div class="card shadow-sm border-start border-4 border-primary h-100">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <p class="text-muted mb-0 small text-uppercase">Wszyscy Użytkownicy</p>
+                        <h2 class="mb-0 fw-bold text-primary">{{ uzytkownicy }}</h2>
+                    </div>
+                    <div class="fs-1">👥</div>
+                </div>
+            </div>
+        </div>
+    </div>
 
-</body>
-</html>
+    <div class="col-md-3">
+        <div class="card shadow-sm border-start border-4 border-info h-100">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <p class="text-muted mb-0 small text-uppercase">Pracownicy</p>
+                        <h2 class="mb-0 fw-bold text-info">{{ pracownicy }}</h2>
+                    </div>
+                    <div class="fs-1">👨‍⚕️</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-3">
+        <div class="card shadow-sm border-start border-4 border-secondary h-100">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <p class="text-muted mb-0 small text-uppercase">Szpitale</p>
+                        <h2 class="mb-0 fw-bold text-secondary">{{ szpitale }}</h2>
+                    </div>
+                    <div class="fs-1">🏥</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-3">
+        <div class="card shadow-sm border-start border-4 border-danger h-100">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <p class="text-muted mb-0 small text-uppercase">Zarejestrowani Dawcy</p>
+                        <h2 class="mb-0 fw-bold text-danger">{{ dawcy }}</h2>
+                    </div>
+                    <div class="fs-1">❤️</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<h4 class="mb-3 text-secondary">🩸 Operacje i Magazyn</h4>
+<div class="row g-3 mb-5">
+
+    <div class="col-md-4">
+        <div class="card shadow-sm h-100">
+            <div class="card-body text-center">
+                <div class="mb-2 fs-1">🩸</div>
+                <h3 class="fw-bold">{{ oddania }}</h3>
+                <p class="text-muted mb-0">Zarejestrowanych oddań</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-4">
+        <div class="card shadow-sm h-100">
+            <div class="card-body text-center">
+                <div class="mb-2 fs-1">🔬</div>
+                <h3 class="fw-bold">{{ badania }}</h3>
+                <p class="text-muted mb-0">Wykonanych badań</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-4">
+        <div class="card shadow-sm h-100">
+            <div class="card-body text-center">
+                <div class="mb-2 fs-1">🚑</div>
+                <h3 class="fw-bold">{{ zapotrzebowania }}</h3>
+                <p class="text-muted mb-0">Zgłoszonych zapotrzebowań</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="card shadow mb-4">
+    <div class="card-header bg-dark text-white">
+        <h3 class="h5 mb-0">🛠️ Narzędzia administracyjne</h3>
+    </div>
+    <div class="card-body">
+        <div class="row g-3">
+
+            <div class="col-md-4">
+                <a href="/admin/uzytkownicy" class="btn btn-outline-dark w-100 p-3 d-flex align-items-center justify-content-center gap-2">
+                    <span>👤</span>
+                    <span class="fw-bold">Zarządzanie użytkownikami</span>
+                </a>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+{% endblock %}

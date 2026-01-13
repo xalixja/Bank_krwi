@@ -1,0 +1,25 @@
+/* kolor tła - głęboka czerwień */
+.bg-krew {
+    background-color: #8a0303 !important;  /* !important wymusza ten kolor nad Bootstrapem */
+}
+
+/* Jasne tło dla wiersza edycji */
+.table-krew-light {
+    --bs-table-bg: #ffe5e5;       /* Bardzo jasny czerwony */
+    --bs-table-striped-bg: #ffcccc;
+    --bs-table-hover-bg: #ffb3b3;
+    color: black;
+    border-color: #ffcccc;
+}
+
+/*  kolor przycisku */
+.btn-krew {
+    background-color: #8a0303;
+    color: white;
+    border: 1px solid #6d0202;
+}
+
+.btn-krew:hover {
+    background-color: #6d0202; /* Ciemniejszy po najechaniu myszką */
+    color: white;
+}

@@ -1,46 +1,93 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <meta charset="UTF-8">
-    <title>Rejestracja dawcy</title>
-</head>
-<body>
+{% extends "base.html" %}
 
-<h1>Rejestracja nowego dawcy</h1>
+{% block title %}Rejestracja dawcy{% endblock %}
 
-<form method="POST">
+{% block content %}
 
-    <h3>Dane logowania</h3>
-    <p>Login: <input type="text" name="login" required></p>
-    <p>Hasło: <input type="password" name="haslo" required></p>
+<div class="row justify-content-center mt-4 mb-5">
+    <div class="col-md-8 col-lg-6">
 
-    <h3>Dane osobowe</h3>
-    <p>Imię: <input type="text" name="imie" required></p>
-    <p>Nazwisko: <input type="text" name="nazwisko" required></p>
-    <p>PESEL: <input type="text" name="pesel" required></p>
-    <p>Kontakt: <input type="text" name="kontakt" required></p>
+        <div class="card shadow">
+            <div class="card-header bg-krew text-white text-center py-3">
+                <h2 class="h4 mb-0">Rejestracja nowego dawcy</h2>
+            </div>
 
-    <h3>Dane medyczne</h3>
-    <p>Grupa krwi:
-        <select name="grupa" required>
-            <option value="A">A</option>
-            <option value="B">B</option>
-            <option value="AB">AB</option>
-            <option value="0">0</option>
-        </select>
-    </p>
+            <div class="card-body p-4">
+                <form method="POST">
 
-    <p>Rh:
-        <select name="rh" required>
-            <option value="+">+</option>
-            <option value="-">-</option>
-        </select>
-    </p>
+                    <h5 class="text-danger border-bottom pb-2 mb-3">1. Dane logowania</h5>
+                    <div class="row g-3 mb-4">
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold">Login</label>
+                            <input type="text" name="login" class="form-control" placeholder="Wymyśl login" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold">Hasło</label>
+                            <input type="password" name="haslo" class="form-control" placeholder="••••••••" required>
+                        </div>
+                    </div>
 
-    <button type="submit">Zarejestruj</button>
-</form>
+                    <h5 class="text-danger border-bottom pb-2 mb-3">2. Dane osobowe</h5>
+                    <div class="row g-3 mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold">Imię</label>
+                            <input type="text" name="imie" class="form-control" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold">Nazwisko</label>
+                            <input type="text" name="nazwisko" class="form-control" required>
+                        </div>
 
-<p><a href="/login">Powrót do logowania</a></p>
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold">PESEL</label>
+                            <input type="text" name="pesel" class="form-control" maxlength="11" required>
+                            <div class="form-text small">Potrzebny do identyfikacji medycznej.</div>
+                        </div>
 
-</body>
-</html>
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold">Kontakt</label>
+                            <input type="text" name="kontakt" class="form-control" placeholder="Telefon lub e-mail" required>
+                        </div>
+                    </div>
+
+                    <h5 class="text-danger border-bottom pb-2 mb-3 mt-4">3. Dane medyczne</h5>
+                    <div class="row g-3 mb-4">
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold">Grupa krwi</label>
+                            <select name="grupa" class="form-select" required>
+                                <option value="" disabled selected>Wybierz...</option>
+                                <option value="A">A</option>
+                                <option value="B">B</option>
+                                <option value="AB">AB</option>
+                                <option value="0">0</option>
+                            </select>
+                        </div>
+
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold">Czynnik Rh</label>
+                            <select name="rh" class="form-select" required>
+                                <option value="" disabled selected>Wybierz...</option>
+                                <option value="+">Rh+ (dodatni)</option>
+                                <option value="-">Rh- (ujemny)</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="d-grid gap-2 mt-4">
+                        <button type="submit" class="btn btn-krew btn-lg">
+                            Zarejestruj się
+                        </button>
+                    </div>
+
+                </form>
+            </div>
+
+            <div class="card-footer bg-light text-center py-3">
+                <span class="text-muted">Masz już konto?</span>
+                <a href="/login" class="fw-bold text-decoration-none ms-1">Zaloguj się</a>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}

@@ -1,22 +1,68 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <meta charset="UTF-8">
-    <title>Dane dawcy</title>
-</head>
-<body>
+{% extends "base.html" %}
 
-<h1>Dane dawcy</h1>
+{% block title %}Moje dane{% endblock %}
 
-<p><strong>Imię:</strong> {{ imie }}</p>
-<p><strong>Nazwisko:</strong> {{ nazwisko }}</p>
-<p><strong>PESEL:</strong> {{ pesel }}</p>
-<p><strong>Grupa krwi:</strong> {{ grupa }}{{ rh }}</p>
-<p><strong>Kontakt:</strong> {{ kontakt }}</p>
+{% block content %}
 
-<p><a href="/dawca/dane/edytuj">Edytuj dane</a></p>
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1>Profil dawcy</h1>
+    <a href="/dawca" class="btn btn-outline-secondary">⬅ Powrót do panelu</a>
+</div>
 
-<p><a href="/dawca">⬅ Powrót do panelu</a></p>
+<div class="card shadow mb-4">
+    <div class="card-header bg-krew text-white">
+        <h3 class="h5 mb-0">Twoje dane osobowe</h3>
+    </div>
 
-</body>
-</html>
+    <div class="card-body">
+        <div class="row align-items-center">
+
+            <div class="col-md-8">
+                <h5 class="text-danger border-bottom pb-2 mb-3">Informacje podstawowe</h5>
+
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label class="small text-muted text-uppercase">Imię</label>
+                        <p class="fs-5 fw-bold mb-0">{{ imie }}</p>
+                    </div>
+
+                    <div class="col-md-6">
+                        <label class="small text-muted text-uppercase">Nazwisko</label>
+                        <p class="fs-5 fw-bold mb-0">{{ nazwisko }}</p>
+                    </div>
+
+                    <div class="col-md-6">
+                        <label class="small text-muted text-uppercase">PESEL</label>
+                        <p class="fs-5 mb-0">{{ pesel }}</p>
+                    </div>
+
+                    <div class="col-md-6">
+                        <label class="small text-muted text-uppercase">Kontakt</label>
+                        <p class="fs-5 mb-0">{{ kontakt }}</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-4 text-center border-start-md mt-4 mt-md-0">
+                <h5 class="text-danger mb-3">Twoja grupa krwi</h5>
+
+                <div class="d-inline-flex justify-content-center align-items-center rounded-circle bg-light border border-danger shadow-sm" style="width: 150px; height: 150px;">
+                    <div class="text-center">
+                        <span class="display-4 fw-bold text-danger">{{ grupa }}</span>
+                        <span class="fs-2 text-danger fw-bold">{{ rh }}</span>
+                    </div>
+                </div>
+
+                <p class="text-muted small mt-2">Dziękujemy, że jesteś z nami! ❤️</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="card-footer bg-light text-end">
+        <a href="/dawca/dane/edytuj" class="btn btn-warning px-4">
+             Edytuj dane
+        </a>
+    </div>
+</div>
+
+{% endblock %}

@@ -1,131 +1,182 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <meta charset="UTF-8">
-    <title>Panel dawcy</title>
-</head>
-<body>
-<h1>Panel dawcy</h1>
+{% extends "base.html" %}
 
-<h2>Witaj, {{ imie }}!</h2>
+{% block title %}Panel Dawcy{% endblock %}
 
-<h3 onclick="toggleEditUser()" style="cursor:pointer; color:blue;">
-    Edytuj dane użytkownika
-</h3>
+{% block content %}
 
-<div id="editUserBox" style="display:none; border:1px solid #aaa; padding:10px; margin-bottom:20px;">
-    <form method="POST" action="/uzytkownik/edytuj">
-        <p>Nowy login:
-            <input type="text" name="login" value="{{ session['login'] if session['login'] else '' }}" required>
-        </p>
-
-        <p>Nowe hasło:
-            <input type="password" name="haslo" placeholder="Pozostaw puste, aby nie zmieniać">
-        </p>
-
-        <button type="submit">Zapisz zmiany</button>
-    </form>
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h1 class="fw-bold">Witaj, <span class="text-danger">{{ imie }}</span>!</h1>
+        <p class="text-muted mb-0">Twoje centrum krwiodawstwa.</p>
+    </div>
+    <a href="/logout" class="btn btn-outline-secondary">🚪 Wyloguj</a>
 </div>
 
-<script>
-    function toggleEditUser() {
-        const box = document.getElementById("editUserBox");
-        box.style.display = box.style.display === "none" ? "block" : "none";
-    }
-</script>
+<div class="row g-4">
 
+    <div class="col-lg-8">
 
-<p><a href="/dawca/dane" style="font-weight:bold;">Dane dawcy</a></p>
-<p><a href="/dawca/zgloszenia-oddania">Zgłoszenia i historia oddań</a></p>
+        <div class="card shadow mb-4">
+            <div class="card-header bg-dark text-white d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">Twój cel pomocy</h5>
+                <span class="badge bg-light text-dark">Liczba oddań: {{ liczba_oddan }}</span>
+            </div>
+            <div class="card-body">
 
-<h2>Twój cel oddawania krwi</h2>
+                {% set procent = (suma_ml / cel_ml * 100) if cel_ml > 0 else 0 %}
 
-<form method="POST" action="/dawca/cel">
-    <p>Ustaw cel (ml):
-        <input type="number" name="cel" value="{{ cel_ml }}" min="0" required>
-        <button type="submit">Zapisz cel</button>
-    </p>
-</form>
+                <h6 class="text-muted mb-2">Postęp w litrach krwi:</h6>
+                <div class="progress" style="height: 30px; font-size: 1rem;">
+                    <div class="progress-bar {% if procent >= 100 %}bg-success{% else %}bg-krew{% endif %} progress-bar-striped progress-bar-animated"
+                         role="progressbar"
+                         style="width: {{ procent if procent <= 100 else 100 }}%;"
+                         aria-valuenow="{{ procent }}" aria-valuemin="0" aria-valuemax="100">
+                        {{ procent|round(1) }}%
+                    </div>
+                </div>
 
-{% set procent = (suma_ml / cel_ml * 100) if cel_ml > 0 else 0 %}
+                <div class="d-flex justify-content-between mt-2 mb-4 fw-bold">
+                    <span>{{ suma_ml }} ml</span>
+                    <span>Cel: {{ cel_ml }} ml</span>
+                </div>
 
-<h3>Postęp celu</h3>
+                <form method="POST" action="/dawca/cel" class="row g-2 align-items-center bg-light p-2 rounded">
+                    <div class="col-auto">
+                        <label class="col-form-label">Zmień cel (ml):</label>
+                    </div>
+                    <div class="col-auto">
+                        <input type="number" name="cel" value="{{ cel_ml }}" min="0" class="form-control" style="width: 120px;" required>
+                    </div>
+                    <div class="col-auto">
+                        <button type="submit" class="btn btn-sm btn-outline-dark">Zapisz</button>
+                    </div>
+                </form>
+            </div>
+        </div>
 
-<div style="width: 300px; height: 25px; border: 1px solid #444; background: #eee;">
-    <div style="
-        width: {{ procent }}%;
-        height: 100%;
-        background: {% if procent >= 100 %}green{% else %}orange{% endif %};
-        ">
+        <div class="row g-3 mb-4">
+            <div class="col-md-6">
+                <div class="card shadow-sm h-100 border-start border-4 border-info">
+                    <div class="card-body">
+                        <p class="text-muted small mb-1">Ostatnie oddanie</p>
+                        <h5 class="fw-bold text-dark">
+                            {% if ostatnie %}{{ ostatnie }}{% else %}-{% endif %}
+                        </h5>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="card shadow-sm h-100 border-start border-4 border-success">
+                    <div class="card-body">
+                        <p class="text-muted small mb-1">Możesz oddać krew:</p>
+                        <h5 class="fw-bold text-success">
+                            {% if najblizsze %}{{ najblizsze }}{% else %}Teraz!{% endif %}
+                        </h5>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card shadow-sm">
+            <div class="card-header bg-light">
+                <h5 class="mb-0">Wyniki badań laboratoryjnych</h5>
+            </div>
+            <div class="card-body p-0">
+                {% if historia_badan %}
+                <div class="table-responsive">
+                    <table class="table table-hover table-striped mb-0 align-middle">
+                        <thead class="table-dark">
+                        <tr>
+                            <th>Data badania</th>
+                            <th>Rodzaj</th>
+                            <th>Wynik</th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        {% for badanie in historia_badan %}
+                        <tr>
+                            <td>{{ badanie[0] }}</td>
+                            <td>{{ badanie[1] }}</td>
+                            <td>
+                                {% if badanie[2] == 'negatywny' %}
+                                <span class="badge bg-success">NEGATYWNY (OK)</span>
+                                {% elif badanie[2] == 'pozytywny' %}
+                                <span class="badge bg-danger">POZYTYWNY (!)</span>
+                                {% else %}
+                                {{ badanie[2] }}
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="p-4 text-center text-muted">
+                    Brak historii badań.
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+    </div>
+
+    <div class="col-lg-4">
+
+        <div class="card shadow mb-4">
+            <div class="card-header bg-krew text-white">
+                <h5 class="mb-0">⚡ Szybkie akcje</h5>
+            </div>
+            <div class="card-body d-grid gap-2">
+                <a href="/dawca/zgloszenia-oddania" class="btn btn-outline-danger text-start p-3">
+                    🩸 <strong>Zgłoszenia i historia</strong><br>
+                    <small class="text-muted">Sprawdź historię swoich donacji</small>
+                </a>
+
+                <a href="/dawca/dane" class="btn btn-outline-secondary text-start p-3">
+                    👤 <strong>Twoje dane</strong><br>
+                    <small class="text-muted">Grupa krwi, PESEL, adres</small>
+                </a>
+
+                <a href="/dawca/przekazania" class="btn btn-outline-success text-start p-3">
+                    ❤️ <strong>Komu pomogłem?</strong><br>
+                    <small class="text-muted">Sprawdź wykorzystanie Twojej krwi</small>
+                </a>
+            </div>
+        </div>
+
+        <div class="card shadow-sm bg-light">
+            <div class="card-body">
+                <h6 class="card-title">Ustawienia konta</h6>
+                <p class="small text-muted">Chcesz zmienić login lub hasło?</p>
+
+                <button class="btn btn-primary w-100 mb-3" type="button" data-bs-toggle="collapse" data-bs-target="#editUserBox">
+                    Edytuj dane logowania
+                </button>
+
+                <div class="collapse" id="editUserBox">
+                    <div class="card card-body border-0 shadow-sm">
+                        <form method="POST" action="/uzytkownik/edytuj">
+                            <div class="mb-3">
+                                <label class="form-label small fw-bold">Login</label>
+                                <input type="text" name="login" class="form-control" value="{{ session['login'] if session['login'] else '' }}" required>
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="form-label small fw-bold">Nowe hasło</label>
+                                <input type="password" name="haslo" class="form-control" placeholder="Zostaw puste by nie zmieniać">
+                            </div>
+
+                            <div class="d-grid">
+                                <button type="submit" class="btn btn-success btn-sm">Zapisz zmiany</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+
     </div>
 </div>
 
-<p>{{ suma_ml }} ml / {{ cel_ml }} ml ({{ procent|round(1) }}%)</p>
-
-<p><strong>Liczba oddań:</strong> {{ liczba_oddan }}</p>
-
-<p><strong>Suma oddanej krwi:</strong>
-    {% if suma_ml %}
-    {{ suma_ml }} ml
-    {% else %}
-    Brak danych
-    {% endif %}
-</p>
-
-<p><strong>Pierwsze oddanie:</strong>
-    {% if pierwsze %}
-    {{ pierwsze }}
-    {% else %}
-    Brak danych
-    {% endif %}
-</p>
-
-<p><strong>Ostatnie oddanie:</strong>
-    {% if ostatnie %}
-    {{ ostatnie }}
-    {% else %}
-    Brak danych
-    {% endif %}
-</p>
-
-<p><strong>Najbliższe zgłoszenie:</strong>
-    {% if najblizsze %}
-    {{ najblizsze }}
-    {% else %}
-    Brak zgłoszeń
-    {% endif %}
-</p>
-
-<h3>Historia badań</h3>
-
-{% if historia_badan %}
-<table border="1" cellpadding="6">
-    <tr>
-        <th>Data badania</th>
-        <th>Rodzaj badania</th>
-        <th>Wynik</th>
-    </tr>
-
-    {% for badanie in historia_badan %}
-    <tr>
-        <td>{{ badanie[0] }}</td>
-        <td>{{ badanie[1] }}</td>
-        <td
-                {% if badanie[2] == 'negatywny' %}
-                    style="color: green; font-weight: bold;"
-                {% elif badanie[2] == 'pozytywny' %}
-                    style="color: red; font-weight: bold;"
-                {% endif %}
-            >
-            {{ badanie[2] }}
-        </td>
-    </tr>
-    {% endfor %}
-</table>
-{% else %}
-<p>Brak badań.</p>
-{% endif %}
-
-<a href="/logout">Wyloguj</a>
-</body>
-</html>
+{% endblock %}

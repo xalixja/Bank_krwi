@@ -1,25 +1,52 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <meta charset="UTF-8">
-    <title>Witaj!</title>
-</head>
-<body>
-<h1>Witamy!</h1>
-<p>Zalogowałeś się jako <strong>{{ rola }}</strong>.</p>
+{% extends "base.html" %}
 
-<p>Przejdź do swojego panelu:</p>
+{% block title %}Witaj w systemie{% endblock %}
 
-{% if rola == "DAWCA" %}
-<a href="/dawca">Panel dawcy</a>
-{% elif rola == "PRACOWNIK" %}
-<a href="/pracownik">Panel pracownika</a>
-{% elif rola == "SZPITAL" %}
-<a href="/szpital">Panel szpitala</a>
-{% elif rola == "ADMIN" %}
-<a href="/admin">Panel administratora</a>
-{% endif %}
+{% block content %}
 
-<p><a href="/logout">Wyloguj</a></p>
-</body>
-</html>
+<div class="row justify-content-center mt-5">
+    <div class="col-md-6 col-lg-5">
+
+        <div class="card shadow text-center">
+            <div class="card-body p-5">
+
+                <h1 class="h3 mb-3 fw-bold">Witamy w Banku Krwi!</h1>
+
+                <p class="text-muted mb-4">
+                    Zalogowano pomyślnie. Twoja rola w systemie to:<br>
+                    <span class="badge bg-secondary fs-6 mt-2 px-3 py-2">{{ rola }}</span>
+                </p>
+
+                <div class="d-grid gap-2 mb-4">
+                    {% if rola == "DAWCA" %}
+                    <a href="/dawca" class="btn btn-danger btn-lg shadow-sm">
+                        Przejdź do Panelu Dawcy
+                    </a>
+                    {% elif rola == "PRACOWNIK" %}
+                    <a href="/pracownik" class="btn btn-primary btn-lg shadow-sm">
+                        Przejdź do Panelu Pracownika
+                    </a>
+                    {% elif rola == "SZPITAL" %}
+                    <a href="/szpital" class="btn btn-success btn-lg shadow-sm">
+                        Przejdź do Panelu Szpitala
+                    </a>
+                    {% elif rola == "ADMIN" %}
+                    <a href="/admin" class="btn btn-dark btn-lg shadow-sm">
+                        Panel Administratora
+                    </a>
+                    {% endif %}
+                </div>
+
+                <hr class="text-muted my-4">
+
+                <a href="/logout" class="text-decoration-none text-muted small hover-underline">
+                    To nie Twoje konto? <strong>Wyloguj się</strong>
+                </a>
+
+            </div>
+        </div>
+
+    </div>
+</div>
+
+{% endblock %}
