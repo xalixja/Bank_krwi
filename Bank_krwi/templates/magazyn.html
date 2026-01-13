@@ -40,27 +40,94 @@
 
 <table border="1" cellpadding="6">
     <tr>
+        <th>ID</th><th>Dawca</th><th>Grupa</th><th>Ilość początkowa</th>
+        <th>Ilość pozostała</th><th>Status</th><th>Data ważności</th>
+    </tr>
+
+    {% for m in dostepne %}
+    <tr>
+        <td>{{ m[0] }}</td>
+        <td>{{ m[1] }}</td>
+        <td>{{ m[2] }}{{ m[3] }}</td>
+        <td>{{ m[4] }}</td>
+        <td>{{ m[5] }}</td>
+        <td>{{ m[6] }}</td>
+        <td>{{ m[7] }}</td>
+    </tr>
+    {% endfor %}
+</table>
+
+<h2>Przeterminowane jednostki krwi</h2>
+
+<table border="1" cellpadding="6">
+    <tr>
+        <th>ID</th><th>Dawca</th><th>Grupa</th><th>Ilość początkowa</th>
+        <th>Ilość pozostała</th><th>Status</th><th>Data ważności</th>
+    </tr>
+
+    {% for p in przeterminowane %}
+    <tr style="background:#ffe0e0;">
+        <td>{{ p[0] }}</td>
+        <td>{{ p[1] }}</td>
+        <td>{{ p[2] }}{{ p[3] }}</td>
+        <td>{{ p[4] }}</td>
+        <td>{{ p[5] }}</td>
+        <td style="color:red; font-weight:bold;">{{ p[6] }}</td>
+        <td style="color:red;">{{ p[7] }}</td>
+    </tr>
+    {% endfor %}
+</table>
+
+<h2>Jednostki odrzucone (złe badania)</h2>
+
+<table border="1" cellpadding="6">
+    <tr>
         <th>ID oddania</th>
         <th>Dawca</th>
         <th>Grupa</th>
-        <th>Ilość początkowa (ml)</th>
-        <th>Ilość pozostała (ml)</th>
+        <th>Ilość początkowa</th>
+        <th>Ilość pozostała</th>
         <th>Status</th>
         <th>Data ważności</th>
     </tr>
 
-    {% for m in magazyn %}
-    <tr class="status-{{ m[6] }}">
-        <td>{{ m[0] }}</td>
-        <td>{{ m[1] }}</td>
-        <td>{{ m[2] }}{{ m[3] }}</td>
-        <td>{{ m[4] }}</td>  <!-- ilosc_poczatkowa -->
-        <td>{{ m[5] }}</td>  <!-- ilosc_pozostala -->
-        <td>{{ m[6] }}</td>  <!-- status -->
-        <td>{{ m[7] }}</td>  <!-- data_waznosci -->
+    {% for o in odrzucone %}
+    <tr style="background:#ffcccc;">
+        <td>{{ o[0] }}</td>
+        <td>{{ o[1] }}</td>
+        <td>{{ o[2] }}{{ o[3] }}</td>
+        <td>{{ o[4] }}</td>
+        <td>{{ o[5] }}</td>
+        <td style="color:red; font-weight:bold;">{{ o[6] }}</td>
+        <td>{{ o[7] }}</td>
     </tr>
     {% endfor %}
 </table>
+
+
+<h2>Zużyte jednostki krwi</h2>
+
+<table border="1" cellpadding="6">
+    <tr>
+        <th>ID</th><th>Dawca</th><th>Grupa</th><th>Ilość początkowa</th>
+        <th>Ilość pozostała</th><th>Status</th><th>Data ważności</th>
+    </tr>
+
+    {% for z in zuzyte %}
+    <tr style="background:#e0e0e0;">
+        <td>{{ z[0] }}</td>
+        <td>{{ z[1] }}</td>
+        <td>{{ z[2] }}{{ z[3] }}</td>
+        <td>{{ z[4] }}</td>
+        <td>{{ z[5] }}</td>
+        <td>{{ z[6] }}</td>
+        <td>{{ z[7] }}</td>
+    </tr>
+    {% endfor %}
+</table>
+
+
+
 
 </body>
 </html>

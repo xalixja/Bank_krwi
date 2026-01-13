@@ -9,6 +9,18 @@
 <h1>Zapotrzebowania szpitali</h1>
 <p><a href="/pracownik">⬅ Powrót do panelu</a></p>
 
+<h2>Filtruj zapotrzebowania</h2>
+
+<form method="POST" action="/pracownik/zapotrzebowania">
+    <select name="filter_status">
+        <option value="wszystkie" {% if filter_status == "wszystkie" or not filter_status %}selected{% endif %}>Wszystkie</option>
+        <option value="oczekujace" {% if filter_status == "oczekujace" %}selected{% endif %}>Oczekujące</option>
+        <option value="zrealizowane" {% if filter_status == "zrealizowane" %}selected{% endif %}>Zrealizowane</option>
+    </select>
+    <button type="submit">Filtruj</button>
+</form>
+
+
 <h2>Lista zapotrzebowań</h2>
 
 <table border="1" cellpadding="6">

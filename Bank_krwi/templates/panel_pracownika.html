@@ -11,6 +11,33 @@
 <h2>Witaj, {{ imie }} {{ nazwisko }}!</h2>
 <p><strong>Stanowisko:</strong> {{ stanowisko }}</p>
 
+<h3 onclick="toggleEditUser()" style="cursor:pointer; color:blue;">
+    Edytuj dane użytkownika
+</h3>
+
+<div id="editUserBox" style="display:none; border:1px solid #aaa; padding:10px; margin-bottom:20px;">
+    <form method="POST" action="/uzytkownik/edytuj">
+        <p>Nowy login:
+            <input type="text" name="login" value="{{ session['login'] if session['login'] else '' }}" required>
+        </p>
+
+        <p>Nowe hasło:
+            <input type="password" name="haslo" placeholder="Pozostaw puste, aby nie zmieniać">
+        </p>
+
+        <button type="submit">Zapisz zmiany</button>
+    </form>
+</div>
+
+<script>
+    function toggleEditUser() {
+        const box = document.getElementById("editUserBox");
+        box.style.display = box.style.display === "none" ? "block" : "none";
+    }
+</script>
+
+<p><a href="/pracownik/dane" style="font-weight:bold;">Dane pracownika</a></p>
+
 <h3>Twoja aktywność</h3>
 <ul>
     <li><strong>Liczba obsłużonych oddań:</strong> {{ oddania }}</li>

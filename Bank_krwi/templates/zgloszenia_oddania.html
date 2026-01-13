@@ -71,8 +71,19 @@
             <tr>
                 <td>{{ z[1] }}</td>
                 <td>{{ z[2] }}</td>
+
+                <td>
+                    {% if z[2] == 'oczekujace' %}
+                    <form method="POST" action="/dawca/zgloszenia-oddania/usun/{{ z[0] }}">
+                        <button type="submit">Usuń</button>
+                    </form>
+                    {% else %}
+                    —
+                    {% endif %}
+                </td>
             </tr>
             {% endfor %}
+
         </table>
         {% else %}
         <p>Brak zgłoszeń.</p>

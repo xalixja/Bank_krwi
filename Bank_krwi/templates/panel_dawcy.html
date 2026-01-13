@@ -9,8 +9,58 @@
 
 <h2>Witaj, {{ imie }}!</h2>
 
+<h3 onclick="toggleEditUser()" style="cursor:pointer; color:blue;">
+    Edytuj dane użytkownika
+</h3>
+
+<div id="editUserBox" style="display:none; border:1px solid #aaa; padding:10px; margin-bottom:20px;">
+    <form method="POST" action="/uzytkownik/edytuj">
+        <p>Nowy login:
+            <input type="text" name="login" value="{{ session['login'] if session['login'] else '' }}" required>
+        </p>
+
+        <p>Nowe hasło:
+            <input type="password" name="haslo" placeholder="Pozostaw puste, aby nie zmieniać">
+        </p>
+
+        <button type="submit">Zapisz zmiany</button>
+    </form>
+</div>
+
+<script>
+    function toggleEditUser() {
+        const box = document.getElementById("editUserBox");
+        box.style.display = box.style.display === "none" ? "block" : "none";
+    }
+</script>
+
+
 <p><a href="/dawca/dane" style="font-weight:bold;">Dane dawcy</a></p>
 <p><a href="/dawca/zgloszenia-oddania">Zgłoszenia i historia oddań</a></p>
+
+<h2>Twój cel oddawania krwi</h2>
+
+<form method="POST" action="/dawca/cel">
+    <p>Ustaw cel (ml):
+        <input type="number" name="cel" value="{{ cel_ml }}" min="0" required>
+        <button type="submit">Zapisz cel</button>
+    </p>
+</form>
+
+{% set procent = (suma_ml / cel_ml * 100) if cel_ml > 0 else 0 %}
+
+<h3>Postęp celu</h3>
+
+<div style="width: 300px; height: 25px; border: 1px solid #444; background: #eee;">
+    <div style="
+        width: {{ procent }}%;
+        height: 100%;
+        background: {% if procent >= 100 %}green{% else %}orange{% endif %};
+        ">
+    </div>
+</div>
+
+<p>{{ suma_ml }} ml / {{ cel_ml }} ml ({{ procent|round(1) }}%)</p>
 
 <p><strong>Liczba oddań:</strong> {{ liczba_oddan }}</p>
 

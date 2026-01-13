@@ -51,8 +51,10 @@
         </td>
         <td>{{ b[5] }}</td>
         <td>
-            <a href="/pracownik/badania/edytuj/{{ b[0] }}">Edytuj</a> |
+            {% if b[6] == id_pracownika %}
+            <a href="/pracownik/badania/edytuj/{{ b[0] }}">Edytuj</a>
             <a href="/pracownik/badania/usun/{{ b[0] }}">Usuń</a>
+            {% endif %}
         </td>
     </tr>
     {% endfor %}

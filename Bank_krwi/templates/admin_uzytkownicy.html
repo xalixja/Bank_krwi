@@ -2,19 +2,52 @@
 <p><a href="/admin">⬅ Powrót</a></p>
 
 <table border="1">
-    <tr><th>ID</th><th>Login</th><th>Rola</th><th>Data rejestracji</th><th>Usuń</th></tr>
+    <tr>
+        <th>ID</th>
+        <th>Login</th>
+        <th>Rola</th>
+        <th>Data rejestracji</th>
+        <th>Edytuj</th>
+        <th>Usuń</th>
+    </tr>
+
     {% for u in uzytkownicy %}
     <tr>
         <td>{{ u[0] }}</td>
         <td>{{ u[1] }}</td>
         <td>{{ u[2] }}</td>
         <td>{{ u[3] }}</td>
+
+        <td>
+            <button onclick="toggleEdit({{ u[0] }})">Edytuj</button>
+        </td>
+
         <td>
             <form method="POST" action="/admin/uzytkownicy/usun/{{ u[0] }}">
                 <button type="submit">Usuń</button>
             </form>
         </td>
     </tr>
+
+    <!-- FORMULARZ EDYCJI -->
+    <tr id="edit-{{ u[0] }}" style="display:none;">
+        <td colspan="6" style="background:#f3f3f3; padding:10px;">
+            <h3>Edytuj użytkownika #{{ u[0] }}</h3>
+
+            <form method="POST" action="/admin/uzytkownicy/edytuj/{{ u[0] }}">
+                <p>Login:
+                    <input type="text" name="login" value="{{ u[1] }}" required>
+                </p>
+
+                <p>Nowe hasło:
+                    <input type="password" name="haslo" placeholder="Pozostaw puste, aby nie zmieniać">
+                </p>
+
+                <button type="submit">Zapisz zmiany</button>
+            </form>
+        </td>
+    </tr>
+
     {% endfor %}
 </table>
 
@@ -34,7 +67,6 @@
         </select>
     </p>
 
-    <!-- POLA DLA DAWCY -->
     <div id="dawca" style="display:none;">
         <h3>Dane dawcy</h3>
         <p>Imię: <input name="d_imie"></p>
@@ -45,7 +77,6 @@
         <p>Kontakt: <input name="d_kontakt"></p>
     </div>
 
-    <!-- POLA DLA PRACOWNIKA -->
     <div id="pracownik" style="display:none;">
         <h3>Dane pracownika</h3>
         <p>Imię: <input name="p_imie"></p>
@@ -53,7 +84,6 @@
         <p>Stanowisko: <input name="p_stanowisko"></p>
     </div>
 
-    <!-- POLA DLA SZPITALA -->
     <div id="szpital" style="display:none;">
         <h3>Dane szpitala</h3>
         <p>Nazwa: <input name="s_nazwa"></p>
@@ -64,6 +94,11 @@
 </form>
 
 <script>
+    function toggleEdit(id) {
+        const row = document.getElementById("edit-" + id);
+        row.style.display = row.style.display === "none" ? "table-row" : "none";
+    }
+
     function pokazPola() {
         let rola = document.getElementById("rola").value;
 

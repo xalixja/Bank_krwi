@@ -49,6 +49,7 @@ def login():
         if user:
             session["user_id"] = user[0]
             session["rola"] = user[1]
+            session["login"] = login
 
             return redirect("/welcome")
 
@@ -142,6 +143,14 @@ def panel_dawcy():
 
     id_dawcy = dane[6]
 
+    #cel dawcy
+    cur.execute("""
+                SELECT cel_ml
+                FROM dawcy
+                WHERE id_dawcy = %s;
+                """, (id_dawcy,))
+    cel = cur.fetchone()[0]
+
     # suma ml z widoku
     cur.execute("""
                 SELECT suma_ml
@@ -150,6 +159,7 @@ def panel_dawcy():
                 """, (id_dawcy,))
     suma = cur.fetchone()
     suma_ml = suma[0] if suma else None
+
 
     # Daty oddań z widoku
     cur.execute("""
@@ -184,6 +194,7 @@ def panel_dawcy():
         liczba_oddan=dane[4],
         najblizsze=dane[5],
         suma_ml=suma_ml,
+        cel_ml=cel,
         pierwsze=pierwsze,
         ostatnie=ostatnie,
         historia_badan=historia_badan
@@ -342,6 +353,49 @@ def zgloszenia_oddania():
         oddania=oddania
     )
 
+@app.route("/dawca/zgloszenia-oddania/usun/<int:id_zgloszenia>", methods=["POST"])
+@login_required(role="DAWCA")
+def usun_zgloszenie(id_zgloszenia):
+    user_id = session["user_id"]
+
+    conn = get_db()
+    cur = conn.cursor()
+
+    # upewniamy się, że zgłoszenie należy do tego dawcy i jest oczekujące
+    cur.execute("""
+                DELETE FROM zgloszenia
+                WHERE id_zgloszenia = %s
+                  AND id_dawcy = (SELECT id_dawcy FROM dawcy WHERE id_uzytkownika = %s)
+                  AND status = 'oczekujace';
+                """, (id_zgloszenia, user_id))
+
+    conn.commit()
+    cur.close()
+    conn.close()
+
+    return redirect("/dawca/zgloszenia-oddania")
+
+@app.route("/dawca/cel", methods=["POST"])
+@login_required(role="DAWCA")
+def ustaw_cel():
+    user_id = session["user_id"]
+    cel = request.form["cel"]
+
+    conn = get_db()
+    cur = conn.cursor()
+
+    cur.execute("""
+                UPDATE dawcy
+                SET cel_ml = %s
+                WHERE id_uzytkownika = %s;
+                """, (cel, user_id))
+
+    conn.commit()
+    cur.close()
+    conn.close()
+
+    return redirect("/dawca")
+
 
 @app.route("/pracownik")
 @login_required(role="PRACOWNIK")
@@ -387,6 +441,77 @@ def panel_pracownika():
         zapotrzebowania=statystyki[2] if statystyki else 0
     )
 
+@app.route("/pracownik/dane")
+@login_required(role="PRACOWNIK")
+def dane_pracownika():
+    user_id = session["user_id"]
+
+    conn = get_db()
+    cur = conn.cursor()
+
+    cur.execute("""
+                SELECT imie, nazwisko, stanowisko
+                FROM pracownicy_banku
+                WHERE id_uzytkownika = %s;
+                """, (user_id,))
+
+    dane = cur.fetchone()
+    cur.close()
+    conn.close()
+
+    return render_template(
+        "dane_pracownika.html",
+        imie=dane[0],
+        nazwisko=dane[1],
+        stanowisko=dane[2],
+    )
+
+@app.route("/pracownik/dane/edytuj", methods=["GET", "POST"])
+@login_required(role="PRACOWNIK")
+def edytuj_dane_pracownika():
+    user_id = session["user_id"]
+
+    conn = get_db()
+    cur = conn.cursor()
+
+    # Pobranie aktualnych danych pracownika
+    cur.execute("""
+                SELECT imie, nazwisko, stanowisko
+                FROM pracownicy_banku
+                WHERE id_uzytkownika = %s;
+                """, (user_id,))
+    dane = cur.fetchone()
+
+    if request.method == "POST":
+        imie = request.form["imie"]
+        nazwisko = request.form["nazwisko"]
+        stanowisko = request.form["stanowisko"]
+
+        cur.execute("""
+                    UPDATE pracownicy_banku
+                    SET imie = %s,
+                        nazwisko = %s,
+                        stanowisko = %s
+                    WHERE id_uzytkownika = %s;
+                    """, (imie, nazwisko, stanowisko, user_id))
+
+        conn.commit()
+        cur.close()
+        conn.close()
+
+        return redirect("/pracownik/dane")
+
+    cur.close()
+    conn.close()
+
+    return render_template(
+        "edytuj_dane_pracownika.html",
+        imie=dane[0],
+        nazwisko=dane[1],
+        stanowisko=dane[2]
+    )
+
+
 @app.route("/pracownik/badania", methods=["GET", "POST"])
 @login_required(role="PRACOWNIK")
 def badania():
@@ -422,7 +547,7 @@ def badania():
 
     # Pobranie badań z widoku
     cur.execute("""
-                SELECT id_badania, id_oddania, dawca, rodzaj_badania, wynik, data_badania
+                SELECT id_badania, id_oddania, dawca, rodzaj_badania, wynik, data_badania, id_pracownika
                 FROM widok_historia_badania
                 ORDER BY data_badania DESC;
                 """)
@@ -431,22 +556,41 @@ def badania():
     cur.close()
     conn.close()
 
-    return render_template("badania.html", badania=badania)
+    return render_template("badania.html", badania=badania, id_pracownika=id_pracownika)
 
 @app.route("/pracownik/badania/edytuj/<int:id_badania>", methods=["GET", "POST"])
 @login_required(role="PRACOWNIK")
 def edytuj_badanie(id_badania):
+    user_id = session["user_id"]
+
     conn = get_db()
     cur = conn.cursor()
 
-    # Pobranie danych badania
+    # Pobranie id_pracownika zalogowanego użytkownika
+    cur.execute("""
+                SELECT id_pracownika
+                FROM pracownicy_banku
+                WHERE id_uzytkownika = %s;
+                """, (user_id,))
+    id_pracownika = cur.fetchone()[0]
+
+    # Pobranie badania TYLKO jeśli wykonał je ten pracownik
     cur.execute("""
                 SELECT id_badania, id_oddania, rodzaj_badania, wynik, data_badania
                 FROM badania
-                WHERE id_badania = %s;
-                """, (id_badania,))
+                WHERE id_badania = %s
+                  AND id_pracownika = %s;
+                """, (id_badania, id_pracownika))
+
     badanie = cur.fetchone()
 
+    # Jeśli badanie nie należy do pracownika → blokujemy dostęp
+    if not badanie:
+        cur.close()
+        conn.close()
+        return "Nie masz uprawnień do edycji tego badania.", 403
+
+    # Obsługa formularza
     if request.method == "POST":
         rodzaj = request.form["rodzaj"]
         wynik = request.form["wynik"]
@@ -457,8 +601,9 @@ def edytuj_badanie(id_badania):
                     SET rodzaj_badania = %s,
                         wynik = %s,
                         data_badania = %s
-                    WHERE id_badania = %s;
-                    """, (rodzaj, wynik, data_badania, id_badania))
+                    WHERE id_badania = %s
+                      AND id_pracownika = %s;
+                    """, (rodzaj, wynik, data_badania, id_badania, id_pracownika))
 
         conn.commit()
         cur.close()
@@ -469,6 +614,7 @@ def edytuj_badanie(id_badania):
     conn.close()
 
     return render_template("edytuj_badanie.html", badanie=badanie)
+
 
 @app.route("/pracownik/badania/usun/<int:id_badania>")
 @login_required(role="PRACOWNIK")
@@ -545,7 +691,7 @@ def edytuj_oddanie(id_oddania):
 
     # Pobranie danych oddania
     cur.execute("""
-                SELECT id_oddania, id_dawcy, ilosc_ml, data_oddania
+                SELECT id_oddania, id_dawcy, ilosc_ml, data_oddania, ilosc_pozostala
                 FROM oddania_krwi
                 WHERE id_oddania = %s;
                 """, (id_oddania,))
@@ -554,12 +700,13 @@ def edytuj_oddanie(id_oddania):
     if request.method == "POST":
         ilosc_ml = request.form["ilosc_ml"]
         data_oddania = request.form["data_oddania"]
+        ilosc_pozostala = request.form["ilosc_pozostala"]
 
         cur.execute("""
                     UPDATE oddania_krwi
                     SET ilosc_ml = %s,
                         data_oddania = %s
-                    WHERE id_oddania = %s;
+                    WHERE id_oddania = %s AND ilosc_ml>ilosc_pozostala;
                     """, (ilosc_ml, data_oddania, id_oddania))
 
         conn.commit()
@@ -592,10 +739,12 @@ def zapotrzebowania():
     conn = get_db()
     cur = conn.cursor()
 
-    # Zmiana statusu zapotrzebowania
-    if request.method == "POST":
+    # -----------------------------
+    # 1. ZMIANA STATUSU ZAPOTRZEBOWANIA
+    # -----------------------------
+    if request.method == "POST" and "id_zapotrzebowania" in request.form:
         id_zapotrzebowania = request.form["id_zapotrzebowania"]
-        nowy_status = request.form["status"]
+        nowy_status = request.form["nowy_status"]
 
         cur.execute("""
                     UPDATE zapotrzebowania
@@ -608,25 +757,37 @@ def zapotrzebowania():
         conn.close()
         return redirect("/pracownik/zapotrzebowania")
 
-    # Pobranie listy zapotrzebowań
-    cur.execute("""
-                SELECT z.id_zapotrzebowania,
-                       s.nazwa,
-                       z.grupa_krwi,
-                       z.rh,
-                       z.ilosc_ml,
-                       z.status,
-                       z.data_wydania
-                FROM zapotrzebowania z
-                         JOIN szpitale s ON s.id_szpitala = z.id_szpitala
-                ORDER BY z.data_wydania DESC;
-                """)
+    # -----------------------------
+    # 2. FILTROWANIE
+    # -----------------------------
+    filter_status = request.form.get("filter_status") if request.method == "POST" else None
+
+    base_query = """
+                 SELECT z.id_zapotrzebowania,
+                        s.nazwa,
+                        z.grupa_krwi,
+                        z.rh,
+                        z.ilosc_ml,
+                        z.status,
+                        z.data_wydania
+                 FROM zapotrzebowania z
+                          JOIN szpitale s ON s.id_szpitala = z.id_szpitala \
+                 """
+
+    if filter_status and filter_status != "wszystkie":
+        cur.execute(base_query + " WHERE z.status = %s ORDER BY z.data_wydania DESC;", (filter_status,))
+    else:
+        cur.execute(base_query + " ORDER BY z.data_wydania DESC;")
+
     zapotrzebowania = cur.fetchall()
 
     cur.close()
     conn.close()
 
-    return render_template("zapotrzebowania.html", zapotrzebowania=zapotrzebowania)
+    return render_template("zapotrzebowania.html",
+                           zapotrzebowania=zapotrzebowania,
+                           filter_status=filter_status)
+
 
 @app.route("/pracownik/zapotrzebowania/zrealizuj/<int:id_zapotrzebowania>", methods=["POST"])
 @login_required(role="PRACOWNIK")
@@ -636,106 +797,124 @@ def zrealizuj_zapotrzebowanie(id_zapotrzebowania):
     conn = get_db()
     cur = conn.cursor()
 
-    # 1. Id pracownika
-    cur.execute("""
-                SELECT id_pracownika
-                FROM pracownicy_banku
-                WHERE id_uzytkownika = %s;
-                """, (user_id,))
-    id_pracownika = cur.fetchone()[0]
+    try:
+        # 1. Id pracownika
+        cur.execute("""
+                    SELECT id_pracownika
+                    FROM pracownicy_banku
+                    WHERE id_uzytkownika = %s;
+                    """, (user_id,))
+        id_pracownika = cur.fetchone()[0]
 
-    # 2. Zapotrzebowanie
-    cur.execute("""
-                SELECT grupa_krwi, rh, ilosc_ml
-                FROM zapotrzebowania
-                WHERE id_zapotrzebowania = %s;
-                """, (id_zapotrzebowania,))
-    grupa, rh, ilosc_potrzebna = cur.fetchone()
+        # 2. Zapotrzebowanie - POBIERAMY TEŻ STATUS
+        cur.execute("""
+                    SELECT grupa_krwi, rh, ilosc_ml, status
+                    FROM zapotrzebowania
+                    WHERE id_zapotrzebowania = %s;
+                    """, (id_zapotrzebowania,))
+        dane_zapotrzebowania = cur.fetchone()
 
-    # 3. Sprawdzenie stanu z widoku
-    cur.execute("""
-                SELECT dostepne_ml
-                FROM widok_stan_krwi
-                WHERE grupa_krwi = %s AND rh = %s;
-                """, (grupa, rh))
-    wynik = cur.fetchone()
+        if not dane_zapotrzebowania:
+            return "Nie znaleziono zapotrzebowania", 404
 
-    if wynik is None or wynik[0] < ilosc_potrzebna:
-        cur.close()
-        conn.close()
-        return "Brak wystarczającej ilości krwi w magazynie", 400
+        grupa, rh, ilosc_potrzebna, status = dane_zapotrzebowania
 
-    # 4. Pobranie oddań (tylko dostępnych, FIFO po dacie)
-    cur.execute("""
-                SELECT o.id_oddania, o.ilosc_pozostala
-                FROM oddania_krwi o
-                         JOIN dawcy d ON o.id_dawcy = d.id_dawcy
-                WHERE d.grupa_krwi = %s
-                  AND d.rh = %s
-                  AND o.status = 'dostepne'
-                  AND o.ilosc_pozostala > 0
-                ORDER BY o.data_oddania ASC;
-                """, (grupa, rh))
-    oddania = cur.fetchall()
+        # --- ZABEZPIECZENIE 1: Sprawdź czy już nie zrealizowane ---
+        if status == 'zrealizowane':
+            cur.close()
+            conn.close()
+            # Możesz przekierować z komunikatem flash zamiast return string
+            return "To zapotrzebowanie zostało już zrealizowane!", 400
 
-    pozostalo = ilosc_potrzebna
+        # 3. Sprawdzenie stanu magazynowego
+        cur.execute("""
+                    SELECT dostepne_ml
+                    FROM widok_stan_krwi
+                    WHERE grupa_krwi = %s AND rh = %s;
+                    """, (grupa, rh))
+        wynik = cur.fetchone()
 
-    for id_oddania, ilosc_pozostala in oddania:
-        if pozostalo <= 0:
-            break
+        if wynik is None or wynik[0] < ilosc_potrzebna:
+            cur.close()
+            conn.close()
+            return "Brak wystarczającej ilości krwi w magazynie", 400
 
-        if ilosc_pozostala <= pozostalo:
-            # zużywamy całe to, co zostało z oddania
+        # 4. Pobranie oddań (FIFO)
+        cur.execute("""
+                    SELECT id_oddania, ilosc_pozostala
+                    FROM widok_magazyn
+                    WHERE grupa_krwi = %s
+                      AND rh = %s
+                      AND status = 'dostepne'
+                      AND ilosc_pozostala > 0
+                    ORDER BY data_waznosci ASC;
+                    """, (grupa, rh))
+        oddania = cur.fetchall()
+
+        pozostalo = ilosc_potrzebna
+
+        for id_oddania, ilosc_pozostala in oddania:
+            if pozostalo <= 0:
+                break
+
+            # Oblicz ile bierzemy z tego worka
+            ilosc_do_pobrania = min(ilosc_pozostala, pozostalo)
+
+            # --- ZABEZPIECZENIE 2: INSERT ON CONFLICT (Dla PostgreSQL) ---
+            # Jeśli wpis już istnieje (np. po błędzie), aktualizujemy go zamiast wyrzucać błąd
             cur.execute("""
                         INSERT INTO oddanie_zapotrzebowanie (id_oddania, id_zapotrzebowania, ilosc_ml)
-                        VALUES (%s, %s, %s);
-                        """, (id_oddania, id_zapotrzebowania, ilosc_pozostala))
+                        VALUES (%s, %s, %s)
+                            ON CONFLICT (id_oddania, id_zapotrzebowania) 
+                        DO UPDATE SET ilosc_ml = oddanie_zapotrzebowanie.ilosc_ml + EXCLUDED.ilosc_ml;
+                        """, (id_oddania, id_zapotrzebowania, ilosc_do_pobrania))
 
-            cur.execute("""
-                        UPDATE oddania_krwi
-                        SET ilosc_pozostala = 0,
-                            status = 'zuzyte'
-                        WHERE id_oddania = %s;
-                        """, (id_oddania,))
+            # Aktualizacja magazynu (oddania)
+            if ilosc_pozostala <= pozostalo:
+                # Zużywamy całe oddanie
+                cur.execute("""
+                            UPDATE oddania_krwi
+                            SET ilosc_pozostala = 0,
+                                status = 'zuzyte'
+                            WHERE id_oddania = %s;
+                            """, (id_oddania,))
+            else:
+                # Zużywamy część
+                nowa_pozostala = ilosc_pozostala - pozostalo
+                cur.execute("""
+                            UPDATE oddania_krwi
+                            SET ilosc_pozostala = %s
+                            WHERE id_oddania = %s;
+                            """, (nowa_pozostala, id_oddania))
 
-            pozostalo -= ilosc_pozostala
+            pozostalo -= ilosc_do_pobrania
 
-        else:
-            # zużywamy część oddania
-            cur.execute("""
-                        INSERT INTO oddanie_zapotrzebowanie (id_oddania, id_zapotrzebowania, ilosc_ml)
-                        VALUES (%s, %s, %s);
-                        """, (id_oddania, id_zapotrzebowania, pozostalo))
+        if pozostalo > 0:
+            conn.rollback() # Cofamy wszystko jeśli nie udało się uzbierać całości
+            cur.close()
+            conn.close()
+            return "Brak wystarczającej ilości krwi w magazynie (błąd spójności)", 400
 
-            nowa_pozostala = ilosc_pozostala - pozostalo
-            cur.execute("""
-                        UPDATE oddania_krwi
-                        SET ilosc_pozostala = %s
-                        WHERE id_oddania = %s;
-                        """, (nowa_pozostala, id_oddania))
+        # 5. Aktualizacja zapotrzebowania
+        cur.execute("""
+                    UPDATE zapotrzebowania
+                    SET status = 'zrealizowane',
+                        id_pracownika = %s,
+                        data_wydania = NOW()
+                    WHERE id_zapotrzebowania = %s;
+                    """, (id_pracownika, id_zapotrzebowania))
 
-            pozostalo = 0
-
-    if pozostalo > 0:
-        conn.rollback()
+        conn.commit()
         cur.close()
         conn.close()
-        return "Brak wystarczającej ilości krwi w magazynie (błąd spójności)", 400
 
-    # 5. Aktualizacja zapotrzebowania
-    cur.execute("""
-                UPDATE zapotrzebowania
-                SET status = 'zrealizowane',
-                    id_pracownika = %s,
-                    data_wydania = NOW()
-                WHERE id_zapotrzebowania = %s;
-                """, (id_pracownika, id_zapotrzebowania))
+        return redirect("/pracownik/zapotrzebowania")
 
-    conn.commit()
-    cur.close()
-    conn.close()
-
-    return redirect("/pracownik/zapotrzebowania")
+    except Exception as e:
+        conn.rollback() # Bardzo ważne: rollback przy każdym błędzie
+        cur.close()
+        conn.close()
+        raise e # Rzuć błąd dalej, żeby widzieć go w konsoli
 
 
 @app.route("/pracownik/magazyn", methods=["GET", "POST"])
@@ -747,25 +926,66 @@ def magazyn():
     grupa = request.form.get("grupa") if request.method == "POST" else None
     rh = request.form.get("rh") if request.method == "POST" else None
 
+    # --- 1. KREW DOSTĘPNA (z filtrowaniem) ---
     base_query = """
                  SELECT id_oddania, dawca, grupa_krwi, rh,
                         ilosc_poczatkowa, ilosc_pozostala, status, data_waznosci
-                 FROM widok_magazyn \
+                 FROM widok_magazyn
+                 WHERE status = 'dostepne' \
                  """
 
     if grupa and rh:
-        cur.execute(base_query + " WHERE grupa_krwi = %s AND rh = %s ORDER BY data_waznosci DESC;", (grupa, rh))
+        cur.execute(base_query + " AND grupa_krwi = %s AND rh = %s ORDER BY data_waznosci ASC;",
+                    (grupa, rh))
     elif grupa:
-        cur.execute(base_query + " WHERE grupa_krwi = %s ORDER BY data_waznosci DESC;", (grupa,))
+        cur.execute(base_query + " AND grupa_krwi = %s ORDER BY data_waznosci ASC;",
+                    (grupa,))
     else:
-        cur.execute(base_query + " ORDER BY data_waznosci DESC;")
+        cur.execute(base_query + " ORDER BY data_waznosci ASC;")
 
-    magazyn = cur.fetchall()
+    dostepne = cur.fetchall()
+
+    # --- 2. KREW PRZETERMINOWANA ---
+    cur.execute("""
+                SELECT id_oddania, dawca, grupa_krwi, rh,
+                       ilosc_poczatkowa, ilosc_pozostala, status, data_waznosci
+                FROM widok_magazyn
+                WHERE status = 'przeterminowane'
+                ORDER BY data_waznosci ASC;
+                """)
+    przeterminowane = cur.fetchall()
+
+    # --- 3. KREW ZUŻYTA ---
+    cur.execute("""
+                SELECT id_oddania, dawca, grupa_krwi, rh,
+                       ilosc_poczatkowa, ilosc_pozostala, status, data_waznosci
+                FROM widok_magazyn
+                WHERE status = 'zuzyte'
+                ORDER BY data_waznosci ASC;
+                """)
+    zuzyte = cur.fetchall()
+
+    # --- 3. KREW ODRZUCONA ---
+    cur.execute("""
+                SELECT id_oddania, dawca, grupa_krwi, rh,
+                       ilosc_poczatkowa, ilosc_pozostala, status, data_waznosci
+                FROM widok_magazyn
+                WHERE status = 'odrzucone_badanie'
+                ORDER BY data_waznosci ASC;
+                """)
+    odrzucone = cur.fetchall()
 
     cur.close()
     conn.close()
 
-    return render_template("magazyn.html", magazyn=magazyn)
+    return render_template(
+        "magazyn.html",
+        dostepne=dostepne,
+        przeterminowane=przeterminowane,
+        zuzyte=zuzyte,
+        odrzucone=odrzucone
+    )
+
 
 
 
@@ -815,6 +1035,73 @@ def panel_szpitala():
         wszystkie=statystyki[2]
     )
 
+@app.route("/szpital/dane")
+@login_required(role="SZPITAL")
+def dane_szpitala():
+    user_id = session["user_id"]
+
+    conn = get_db()
+    cur = conn.cursor()
+
+    cur.execute("""
+                SELECT nazwa, adres
+                FROM szpitale
+                WHERE id_uzytkownika = %s;
+                """, (user_id,))
+
+    dane = cur.fetchone()
+    cur.close()
+    conn.close()
+
+    return render_template(
+        "dane_szpitala.html",
+        nazwa=dane[0],
+        adres=dane[1],
+    )
+
+@app.route("/szpital/dane/edytuj", methods=["GET", "POST"])
+@login_required(role="SZPITAL")
+def edytuj_dane_szpitala():
+    user_id = session["user_id"]
+
+    conn = get_db()
+    cur = conn.cursor()
+
+    # Pobranie aktualnych danych szpitala
+    cur.execute("""
+                SELECT nazwa, adres
+                FROM szpitale
+                WHERE id_uzytkownika = %s;
+                """, (user_id,))
+    dane = cur.fetchone()
+
+    if request.method == "POST":
+        nazwa = request.form["nazwa"]
+        adres = request.form["adres"]
+
+        cur.execute("""
+                    UPDATE szpitale
+                    SET nazwa = %s,
+                        adres = %s
+                    WHERE id_uzytkownika = %s;
+                    """, (nazwa, adres, user_id))
+
+        conn.commit()
+        cur.close()
+        conn.close()
+
+        return redirect("/szpital/dane")
+
+    cur.close()
+    conn.close()
+
+    return render_template(
+        "edytuj_dane_szpitala.html",
+        nazwa=dane[0],
+        adres=dane[1],
+    )
+
+
 @app.route("/szpital/zapotrzebowania")
 @login_required(role="SZPITAL")
 def zapotrzebowania_szpitala():
@@ -850,6 +1137,57 @@ def zapotrzebowania_szpitala():
 
     return render_template("zapotrzebowania_szpitala.html",
                            zapotrzebowania=zapotrzebowania)
+
+@app.route("/szpital/zapotrzebowania/edytuj/<int:id_zapotrzebowania>", methods=["POST"])
+@login_required(role="SZPITAL")
+def edytuj_zapotrzebowanie_szpital(id_zapotrzebowania):
+    user_id = session["user_id"]
+
+    grupa = request.form["grupa"]
+    rh = request.form["rh"]
+    ilosc_ml = request.form["ilosc_ml"]
+
+    conn = get_db()
+    cur = conn.cursor()
+
+    # upewniamy się, że zapotrzebowanie należy do tego szpitala i jest oczekujące
+    cur.execute("""
+                UPDATE zapotrzebowania
+                SET grupa_krwi = %s,
+                    rh = %s,
+                    ilosc_ml = %s
+                WHERE id_zapotrzebowania = %s
+                  AND id_szpitala = (SELECT id_szpitala FROM szpitale WHERE id_uzytkownika = %s)
+                  AND status = 'oczekujace';
+                """, (grupa, rh, ilosc_ml, id_zapotrzebowania, user_id))
+
+    conn.commit()
+    cur.close()
+    conn.close()
+
+    return redirect("/szpital/zapotrzebowania")
+
+@app.route("/szpital/zapotrzebowania/usun/<int:id_zapotrzebowania>", methods=["POST"])
+@login_required(role="SZPITAL")
+def usun_zapotrzebowanie_szpital(id_zapotrzebowania):
+    user_id = session["user_id"]
+
+    conn = get_db()
+    cur = conn.cursor()
+
+    cur.execute("""
+                DELETE FROM zapotrzebowania
+                WHERE id_zapotrzebowania = %s
+                  AND id_szpitala = (SELECT id_szpitala FROM szpitale WHERE id_uzytkownika = %s)
+                  AND status = 'oczekujace';
+                """, (id_zapotrzebowania, user_id))
+
+    conn.commit()
+    cur.close()
+    conn.close()
+
+    return redirect("/szpital/zapotrzebowania")
+
 
 @app.route("/szpital/zapotrzebowania/dodaj", methods=["GET", "POST"])
 @login_required(role="SZPITAL")
@@ -1013,6 +1351,37 @@ def admin_uzytkownicy_dodaj():
 
     return redirect("/admin/uzytkownicy")
 
+@app.route("/admin/uzytkownicy/edytuj/<int:id_uzytkownika>", methods=["POST"])
+@login_required(role="ADMIN")
+def admin_uzytkownicy_edytuj(id_uzytkownika):
+    login = request.form["login"]
+    haslo = request.form["haslo"]
+
+    conn = get_db()
+    cur = conn.cursor()
+
+    if haslo.strip() == "":
+        # zmiana tylko loginu
+        cur.execute("""
+                    UPDATE uzytkownicy
+                    SET login = %s
+                    WHERE id_uzytkownika = %s;
+                    """, (login, id_uzytkownika))
+    else:
+        # zmiana loginu i hasła
+        cur.execute("""
+                    UPDATE uzytkownicy
+                    SET login = %s,
+                        haslo = public.crypt(%s, gen_salt('bf'))
+                    WHERE id_uzytkownika = %s;
+                    """, (login, haslo, id_uzytkownika))
+
+    conn.commit()
+    cur.close()
+    conn.close()
+
+    return redirect("/admin/uzytkownicy")
+
 
 @app.route("/admin/uzytkownicy/usun/<int:id_uzytkownika>", methods=["POST"])
 @login_required(role="ADMIN")
@@ -1025,16 +1394,47 @@ def admin_uzytkownicy_usun(id_uzytkownika):
     conn.close()
     return redirect("/admin/uzytkownicy")
 
-@app.route("/dane_konta")
-def dane_konta():
+@app.route("/uzytkownik/edytuj", methods=["POST"])
+@login_required()
+def edytuj_uzytkownika():
     user_id = session["user_id"]
+    login = request.form["login"]
+    haslo = request.form["haslo"]
+
     conn = get_db()
     cur = conn.cursor()
-    cur.execute("SELECT * FROM uzytkownicy WHERE id_uzytkownika = %s; ", (user_id,))
-    uzytkownicy = cur.fetchall()
 
+    if haslo.strip() == "":
+        cur.execute("""
+                    UPDATE uzytkownicy
+                    SET login = %s
+                    WHERE id_uzytkownika = %s;
+                    """, (login, user_id))
+    else:
+        cur.execute("""
+                    UPDATE uzytkownicy
+                    SET login = %s,
+                        haslo = crypt(%s, gen_salt('bf'))
+                    WHERE id_uzytkownika = %s;
+                    """, (login, haslo, user_id))
+
+    conn.commit()
     cur.close()
     conn.close()
+
+    session["login"] = login
+
+    # wracamy do panelu zależnie od roli
+    rola = session["rola"]
+    if rola == "DAWCA":
+        return redirect("/dawca")
+    if rola == "PRACOWNIK":
+        return redirect("/pracownik")
+    if rola == "SZPITAL":
+        return redirect("/szpital")
+    if rola == "ADMIN":
+        return redirect("/admin")
+
 
     return render_template("dane_konta.html", uzytkownicy=uzytkownicy)
 @app.route("/logout")
