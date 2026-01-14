@@ -34,8 +34,17 @@
                 <form method="POST" class="row g-2 align-items-end">
                     <div class="col-md-8">
                         <label class="form-label fw-bold">Data planowanej wizyty</label>
-                        <input type="date" name="data_zgloszenia" class="form-control" required>
-                        <div class="form-text small">Wybierz dogodny termin.</div>
+
+                        <input type="date"
+                               name="data_zgloszenia"
+                               class="form-control"
+                               required
+                               value="{{ sugerowana_data }}"
+                               min="{{ sugerowana_data }}">
+
+                        <div class="form-text small text-muted">
+                            System automatycznie wyliczył najbliższy bezpieczny termin (wymagana przerwa 56 dni).
+                        </div>
                     </div>
                     <div class="col-md-4">
                         <button type="submit" class="btn btn-krew w-100">
@@ -69,8 +78,8 @@
                             <td>
                                 {% if z[2] == 'oczekujace' %}
                                 <span class="badge bg-warning text-dark">OCZEKUJĄCE</span>
-                                {% elif z[2] == 'zrealizowane' %}
-                                <span class="badge bg-success">ZREALIZOWANE</span>
+                                {% elif z[2] == 'zaakceptowane' %}
+                                <span class="badge bg-success">ZAAKCEPTOWANE</span>
                                 {% else %}
                                 <span class="badge bg-secondary">{{ z[2] }}</span>
                                 {% endif %}
@@ -81,7 +90,7 @@
                                 <form method="POST" action="/dawca/zgloszenia-oddania/usun/{{ z[0] }}">
                                     <button type="submit" class="btn btn-sm btn-outline-danger"
                                             onclick="return confirm('Czy na pewno chcesz wycofać to zgłoszenie?');">
-                                        🗑️ Usuń
+                                        Usuń
                                     </button>
                                 </form>
                                 {% else %}
@@ -95,7 +104,7 @@
                 </div>
                 {% else %}
                 <div class="p-4 text-center text-muted">
-                    Brak aktywnych zgłoszeń. Zaplanuj wizytę powyżej! 👆
+                    Brak aktywnych zgłoszeń. Zaplanuj wizytę powyżej!
                 </div>
                 {% endif %}
             </div>

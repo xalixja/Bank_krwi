@@ -9,6 +9,26 @@
     <a href="/pracownik" class="btn btn-outline-secondary">⬅ Powrót do panelu</a>
 </div>
 
+{% with messages = get_flashed_messages(with_categories=true) %}
+{% if messages %}
+{% for category, message in messages %}
+{% set alert_class = 'alert-primary' %}
+{% if category == 'danger' or category == 'error' %} {% set alert_class = 'alert-danger' %}
+{% elif category == 'success' %} {% set alert_class = 'alert-success' %}
+{% elif category == 'warning' %} {% set alert_class = 'alert-warning' %}
+{% endif %}
+
+<div class="alert {{ alert_class }} alert-dismissible fade show shadow-sm" role="alert">
+    <strong>
+        {% if category == 'success' %}Sukces!{% elif category == 'danger' %}Błąd!{% else %}Uwaga!{% endif %}
+    </strong>
+    {{ message }}
+    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+</div>
+{% endfor %}
+{% endif %}
+{% endwith %}
+
 <div class="card shadow-sm mb-4">
     <div class="card-body bg-light py-3">
         <form method="POST" action="/pracownik/zapotrzebowania" class="row g-2 align-items-center">
