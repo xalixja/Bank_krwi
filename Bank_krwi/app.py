@@ -463,6 +463,10 @@ def panel_pracownika():
     conn = get_db()
     cur = conn.cursor()
 
+    # Pobieramy alarmujące zapotrzebowania
+    cur.execute("SELECT * FROM Widok_zapotrzebowania_duze")
+    pilne_zapotrzebowania = cur.fetchall()
+
     # Pobranie danych pracownika
     cur.execute("""
                 SELECT p.id_pracownika, p.imie, p.nazwisko, p.stanowisko
@@ -496,7 +500,8 @@ def panel_pracownika():
         stanowisko=pracownik[3],
         oddania=statystyki[0] if statystyki else 0,
         badania=statystyki[1] if statystyki else 0,
-        zapotrzebowania=statystyki[2] if statystyki else 0
+        zapotrzebowania=statystyki[2] if statystyki else 0,
+        alerts=pilne_zapotrzebowania
     )
 
 @app.route("/pracownik/dane")
@@ -737,28 +742,41 @@ def oddania():
     cur.execute("SELECT srednia_ml FROM widok_srednia_ilosc;")
     srednia = cur.fetchone()[0]
 
-# Dodawanie oddania
+    # Dodawanie oddania
     if request.method == "POST":
-        id_dawcy = request.form["id_dawcy"]
+        pesel = request.form["pesel"]
         ilosc_ml = request.form["ilosc_ml"]
         data_oddania = request.form["data_oddania"]
 
-        # -----------------------------
-        # WALIDACJA: data nie może być z przyszłości
-        # -----------------------------
+        # 1. Walidacja daty
         if data_oddania > str(date.today()):
             error = "Data oddania nie może być z przyszłości."
         else:
-            # Zapis oddania
-            cur.execute("""
-                        INSERT INTO oddania_krwi (id_dawcy, id_pracownika, ilosc_ml, data_oddania, ilosc_pozostala)
-                        VALUES (%s, %s, %s, %s, %s);
-                        """, (id_dawcy, id_pracownika, ilosc_ml, data_oddania, ilosc_ml))
+            try:
+                # 2. Szukamy ID dawcy na podstawie PESEL
+                cur.execute("SELECT id_dawcy FROM Dawcy WHERE pesel = %s;", (pesel,))
+                dawca = cur.fetchone()
 
-            conn.commit()
-            cur.close()
-            conn.close()
-            return redirect("/pracownik/oddania")
+                if not dawca:
+                    error = "Nie znaleziono dawcy o podanym numerze PESEL."
+                else:
+                    id_dawcy = dawca[0] # Wyciągamy ID z krotki
+
+                    # 3. Próba zapisu oddania
+                    # Używamy znalezionego id_dawcy
+                    cur.execute("""
+                                INSERT INTO oddania_krwi (id_dawcy, id_pracownika, ilosc_ml, data_oddania, ilosc_pozostala)
+                                VALUES (%s, %s, %s, %s, %s);
+                                """, (id_dawcy, id_pracownika, ilosc_ml, data_oddania, ilosc_ml))
+
+                    conn.commit()
+                    cur.close()
+                    conn.close()
+                    return redirect("/pracownik/oddania")
+
+            except Exception as e:
+                conn.rollback()
+                error = f"Błąd bazy danych: {str(e).splitlines()[0]}"
 
     # Pobranie oddań
     cur.execute("""

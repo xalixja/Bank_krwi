@@ -14,6 +14,36 @@
     <a href="/logout" class="btn btn-outline-secondary">🚪 Wyloguj</a>
 </div>
 
+<div class="container mt-4">
+    {% if alerts %}
+    <div class="alert alert-danger shadow-sm" role="alert">
+        <h4 class="alert-heading"><i class="bi bi-exclamation-triangle-fill"></i> PILNE: Duże zapotrzebowania!</h4>
+        <p>Poniższe szpitale zgłosiły zapotrzebowanie powyżej 1000ml. Wymagana natychmiastowa reakcja.</p>
+        <hr>
+        <table class="table table-danger table-striped">
+            <thead>
+            <tr>
+                <th>Szpital</th>
+                <th>Grupa Krwi</th>
+                <th>Rh</th>
+                <th>Ilość (ml)</th>
+            </tr>
+            </thead>
+            <tbody>
+            {% for row in alerts %}
+            <tr>
+                <td>{{ row[0] }}</td> <td><strong>{{ row[1] }}</strong></td> <td><strong>{{ row[2] }}</strong></td> <td class="fw-bold">{{ row[3] }} ml</td> </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <div class="alert alert-success">
+        Brak krytycznych zapotrzebowań w systemie.
+    </div>
+    {% endif %}
+</div>
+
 <div class="row g-3 mb-5">
 
     <div class="col-md-4">
@@ -58,7 +88,7 @@
     <div class="col-lg-8">
         <div class="card shadow mb-4">
             <div class="card-header bg-krew text-white">
-                <h5 class="mb-0">🛠️ Moduły operacyjne</h5>
+                <h5 class="mb-0">Moduły operacyjne</h5>
             </div>
             <div class="card-body">
                 <div class="row g-3">

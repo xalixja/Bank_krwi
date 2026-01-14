@@ -51,14 +51,14 @@
                     <td class="text-end">
                         {% if z[4] == 'oczekujace' %}
                         <button onclick="toggleEdit({{ z[0] }})" class="btn btn-sm btn-outline-primary me-1">
-                            ✏️ Edytuj
+                            Edytuj
                         </button>
 
                         <form method="POST" action="/szpital/zapotrzebowania/usun/{{ z[0] }}" class="d-inline">
                             <button type="submit"
                                     class="btn btn-sm btn-outline-danger"
                                     onclick="return confirm('Czy na pewno anulować to zapotrzebowanie?');">
-                                🗑️ Usuń
+                                Usuń
                             </button>
                         </form>
                         {% else %}

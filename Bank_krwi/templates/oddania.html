@@ -32,8 +32,15 @@
         <form method="POST" class="row g-3 align-items-end">
 
             <div class="col-md-4">
-                <label class="form-label">ID Dawcy</label>
-                <input type="number" name="id_dawcy" class="form-control" required placeholder="np. 5">
+                <label class="form-label">Pesel Dawcy</label>
+                <input type="text"
+                       name="pesel"
+                       class="form-control"
+                       maxlength="11"
+                       pattern="\d{11}"
+                       inputmode="numeric"
+                       title="PESEL musi składać się z 11 cyfr"
+                       required>
             </div>
 
             <div class="col-md-3">
@@ -65,6 +72,7 @@
             <table class="table table-hover table-striped align-middle mb-0">
                 <thead class="table-dark">
                 <tr>
+                    <th>ID Oddania</th>
                     <th>Dawca</th>
                     <th>Grupa krwi</th>
                     <th>Ilość</th>
@@ -77,6 +85,7 @@
                 <tbody>
                 {% for o in oddania %}
                 <tr>
+                    <td>{{ o[0] }}</td>
                     <td class="fw-bold">{{ o[1] }}</td>
 
                     <td><span class="badge bg-krew">{{ o[2] }}{{ o[3] }}</span></td>
