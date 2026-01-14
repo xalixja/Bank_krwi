@@ -1,0 +1,429 @@
+\documentclass[12pt,a4paper]{article}
+\usepackage{polski}
+\usepackage[utf8]{inputenc}
+\usepackage{geometry}
+\usepackage{titlesec}
+\usepackage{graphicx}
+\usepackage{hyperref}
+\usepackage{longtable}
+\usepackage{array}
+\usepackage{xcolor}
+\usepackage{url}
+\usepackage{listings}
+
+% Konfiguracja wyświetlania kodu SQL
+\lstset{
+    language=SQL,
+    basicstyle=\ttfamily\small,
+    keywordstyle=\color{blue}\bfseries,
+    commentstyle=\color{gray},
+    stringstyle=\color{red},
+    breaklines=true,
+    frame=single,
+    showstringspaces=false,
+    inputencoding=utf8,
+    extendedchars=true,
+    literate={ą}{{\k{a}}}1 {ć}{{\'c}}1 {ę}{{\k{e}}}1 {ł}{{\l{}}}1 {ń}{{\'n}}1 {ó}{{\'o}}1 {ś}{{\'s}}1 {ż}{{\.z}}1 {ź}{{\'z}}1 {Ą}{{\k{A}}}1 {Ć}{{\'C}}1 {Ę}{{\k{E}}}1 {Ł}{{\L{}}}1 {Ń}{{\'N}}1 {Ó}{{\'O}}1 {Ś}{{\'S}}1 {Ż}{{\.Z}}1 {Ź}{{\'Z}}1
+}
+
+\geometry{margin=2.5cm}
+
+\title{Dokumentacja projektu \\ \textbf{Bank Krwi}}
+\author{Alicja Borek}
+\date{Semestr zimowy 2025/2026}
+
+\begin{document}
+
+\maketitle
+
+% ============================================================
+\section{I. Projekt koncepcji i założenia}
+
+\subsection{1. Zdefiniowanie tematu projektu}
+Celem projektu jest stworzenie kompletnego systemu informatycznego wspierającego działanie banku krwi. Aplikacja ma na celu cyfryzację procesów związanych z oddawaniem krwi, zarządzaniem magazynem oraz dystrybucją krwi do szpitali.
+
+\textbf{Główne cele i zadania:}
+\begin{itemize}
+    \item Rejestracja i ewidencja dawców krwi.
+    \item Obsługa procesu zgłaszania chęci oddania krwi (weryfikacja terminów).
+    \item Rejestrowanie faktycznych oddań oraz wyników badań laboratoryjnych.
+    \item Zarządzanie zapotrzebowaniami zgłaszanymi przez jednostki medyczne (szpitale).
+    \item Monitorowanie stanu magazynowego krwi z uwzględnieniem daty ważności.
+\end{itemize}
+
+\subsection{Analiza wymagań użytkownika}
+W systemie wyróżniono cztery role użytkowników, z których każda posiada dedykowane funkcjonalności:
+
+\begin{itemize}
+    \item \textbf{Dawca}: Może rejestrować się w systemie, zarządzać danymi osobowymi, przeglądać historię oddań, wyniki badań oraz zgłaszać chęć oddania krwi (zapisywać się na termin).
+    \item \textbf{Pracownik banku krwi}: Posiada uprawnienia do wprowadzania nowych oddań, wpisywania wyników badań (HIV, HCV itp.), zarządzania stanem magazynowym oraz realizowania zapotrzebowań szpitali.
+    \item \textbf{Szpital}: Konto instytucjonalne, które umożliwia zgłaszanie zapotrzebowania na konkretną grupę krwi i śledzenie statusu realizacji (oczekujące/zrealizowane).
+    \item \textbf{Administrator}: Zarządza użytkownikami systemu (zakładanie kont pracowniczych i szpitalnych oraz dawcó)w, posiada dostęp do pełnych statystyk systemu.
+\end{itemize}
+
+\subsection{Zaprojektowanie funkcji}
+Baza danych realizuje następujące funkcje podstawowe:
+\begin{itemize}
+    \item \textbf{Przechowywanie danych}: Bezpieczne składowanie haseł (szyfrowanie `pgcrypto`) i danych wrażliwych.
+    \item \textbf{Logika biznesowa (Triggers)}: Automatyczne wyliczanie daty ważności krwi (35 dni), blokowanie zbyt częstych oddań (56 dni przerwy), zmiana statusu krwi.
+    \item \textbf{Raportowanie (Views)}: Generowanie widoków dla magazynu, historii badań oraz statystyk zapotrzebowań.
+\end{itemize}
+
+% ============================================================
+\section{Projekt diagramów (konceptualny)}
+
+\subsection{Budowa i analiza diagramu przepływu danych (DFD)}
+Analiza przepływu danych (Data Flow Diagram - DFD) na poziomie 1 obrazuje logiczne przetwarzanie informacji w systemie Banku Krwi. Model ten identyfikuje źródła danych, procesy transformujące te dane oraz miejsca ich przechowywania.
+
+\subsubsection{Elementy sterujące przepływem}
+Przepływ danych w systemie nie jest liniowy, lecz sterowany przez zdefiniowane reguły biznesowe zaimplementowane w warstwie aplikacji (Flask) oraz bazy danych (Triggery SQL). Główne elementy sterujące to:
+\begin{itemize}
+    \item \textbf{Autoryzacja ról}: Mechanizm \texttt{@login\_required} we Flasku decyduje, czy użytkownik ma prawo uruchomić dany proces (np. tylko Szpital może wysłać zapotrzebowanie).
+    \item \textbf{Walidacja czasowa}: Wyzwalacze w bazie danych (np. \texttt{blokuj\_wczesne\_zgloszenie}) sterują przepływem, odrzucając próby wprowadzenia błędnych danych.
+    \item \textbf{Wyniki badań}: Warunek logiczny w procesie przetwarzania oddania – wynik pozytywny automatycznie zmienia ścieżkę przepływu na "Utylizacja/Blokada", zamiast "Magazyn dostępny".
+\end{itemize}
+
+\subsubsection{Specyfikacja przepływów (Wejścia i Wyjścia)}
+System podzielono na trzy główne procesy przetwarzania danych:
+
+\begin{enumerate}
+    \item \textbf{Proces 1.0: Obsługa Dawcy i Zgłoszeń}
+    \begin{itemize}
+        \item \textbf{Wejście}: Dane osobowe dawcy, deklarowana data wizyty.
+        \item \textbf{Operacje}: Weryfikacja historii w tabeli \texttt{Oddania\_krwi}, sprawdzenie swoich zgłoszeń, rejestracja w tabeli \texttt{Zgloszenia}.
+        \item \textbf{Wyjście}: Zarejestrowanie terminu wizyty ze statusem oczekujące lub komunikat błędu (blokada).
+        \item \textbf{Magazyn danych}: Tabela \texttt{Dawcy}, Tabela \texttt{Zgloszenia}.
+    \end{itemize}
+
+    \item \textbf{Proces 2.0: Przetwarzanie Donacji i Badań}
+    \begin{itemize}
+        \item \textbf{Wejście}: Fizyczna jednostka krwi (ilość ml), PESEL dawcy, wyniki badań laboratoryjnych.
+        \item \textbf{Operacje}: Rejestracja oddania przez Pracownika, przypisanie daty ważności (Trigger +35 dni), walidacja wyników badań (Trigger \texttt{oznacz\_odrzucone\_badanie}).
+        \item \textbf{Wyjście}: Jednostka krwi o statusie \texttt{'dostepne'} gotowa do wydania lub \texttt{'odrzucone'} niezdatna do wydania.
+        \item \textbf{Magazyn danych}: Tabela \texttt{Oddania\_krwi}, Tabela \texttt{Badania}.
+    \end{itemize}
+
+    \item \textbf{Proces 3.0: Dystrybucja i Obsługa Szpitali}
+    \begin{itemize}
+        \item \textbf{Wejście}: Zapotrzebowanie szpitala (Grupa krwi, Rh, ilość).
+        \item \textbf{Operacje}: Algorytm FIFO (First-In-First-Out) wyszukujący najstarsze pasujące jednostki krwi, aktualizacja stanów magazynowych (zmniejszenie \texttt{ilosc\_pozostala}), zmiana statusu na \texttt{'zrealizowane'}.
+        \item \textbf{Wyjście}: Raport wydania krwi, aktualizacja panelu "Komu pomogłem?"(\texttt{Dawca\_Szpital}).
+        \item \textbf{Magazyn danych}: Tabela \texttt{Zapotrzebowania}, Tabela \texttt{Oddanie\_Zapotrzebowanie}.
+    \end{itemize}
+\end{enumerate}
+
+\begin{figure}[h]
+    \centering
+    \includegraphics[width=1.0\textwidth]{dfd_level1.png}
+    \caption{Diagram przepływu danych (DFD) poziomu 1 dla systemu Banku Krwi.}
+\end{figure}
+
+\subsection{Zdefiniowanie encji i atrybutów}
+W systemie zdefiniowano następujące klasy encji:
+
+\begin{enumerate}
+    \item \textbf{Użytkownicy} (\texttt{Uzytkownicy}): Encja nadrzędna przechowująca dane logowania dla wszystkich ról systemowych.
+    \begin{itemize}
+        \item Atrybuty: \texttt{login}, \texttt{haslo} (hash), \texttt{rola} (ENUM: ADMIN, PRACOWNIK, SZPITAL, DAWCA), \texttt{data\_rejestracji}.
+    \end{itemize}
+
+    \item \textbf{Dawcy} (\texttt{Dawcy}): Rozszerzenie konta użytkownika o dane medyczne.
+    \begin{itemize}
+        \item Atrybuty: \texttt{imie}, \texttt{nazwisko}, \texttt{pesel} (unikalny), \texttt{grupa\_krwi}, \texttt{rh}, \texttt{kontakt}, \texttt{cel\_ml}.
+    \end{itemize}
+
+    \item \textbf{Pracownicy Banku} (\texttt{Pracownicy\_banku}):
+    \begin{itemize}
+        \item Atrybuty: \texttt{imie}, \texttt{nazwisko}, \texttt{stanowisko} (lekarz/laborant).
+    \end{itemize}
+
+    \item \textbf{Szpitale} (\texttt{Szpitale}): Placówki zamawiające krew.
+    \begin{itemize}
+        \item Atrybuty: \texttt{nazwa}, \texttt{adres}.
+    \end{itemize}
+
+    \item \textbf{Zgłoszenia} (\texttt{Zgloszenia}): Rezerwacje terminów wizyt przez dawców.
+    \begin{itemize}
+        \item Atrybuty: \texttt{data\_zgloszenia}, \texttt{status} (oczekujące/zaakceptowane).
+    \end{itemize}
+
+    \item \textbf{Oddania Krwi} (\texttt{Oddania\_krwi}): Fizyczne jednostki krwi w magazynie.
+    \begin{itemize}
+        \item Atrybuty: \texttt{data\_oddania}, \texttt{ilosc\_ml}, \texttt{data\_waznosci}, \texttt{status} (dostępne, zużyte, przeterminowane, odrzucone), \texttt{ilosc\_pozostala}.
+    \end{itemize}
+
+    \item \textbf{Badania} (\texttt{Badania}): Wyniki testów wirusologicznych dla oddań.
+    \begin{itemize}
+        \item Atrybuty: \texttt{rodzaj\_badania} (HIV, HCV...), \texttt{wynik}, \texttt{data\_badania}.
+    \end{itemize}
+
+    \item \textbf{Zapotrzebowania} (\texttt{Zapotrzebowania}): Zamówienia składane przez szpitale.
+    \begin{itemize}
+        \item Atrybuty: \texttt{grupa\_krwi}, \texttt{rh}, \texttt{ilosc\_ml}, \texttt{status}, \texttt{data\_wydania}.
+    \end{itemize}
+\end{enumerate}
+
+\subsection{Zaprojektowanie relacji pomiędzy encjami}
+
+
+\subsubsection{Klucze i powiązania (Relacje)}
+System opiera się na relacjach realizowanych poprzez klucze obce (\textit{Foreign Keys}):
+
+\begin{itemize}
+    \item \textbf{Relacja 1:1 (Dziedziczenie ról)}: Tabele \texttt{Dawcy}, \texttt{Pracownicy\_banku} oraz \texttt{Szpitale} są powiązane z tabelą \texttt{Uzytkownicy} poprzez klucz obcy \texttt{id\_uzytkownika}, który jest jednocześnie kluczem unikalnym. Pozwala to na oddzielenie danych autoryzacyjnych od danych osobowych.
+
+    \item \textbf{Relacja 1:N (Jeden do wielu)}:
+    \begin{itemize}
+        \item Jeden \textbf{Dawca} może mieć wiele \textbf{Oddań} oraz \textbf{Zgłoszeń}.
+        \item Jedno \textbf{Oddanie} może mieć przypisane wiele \textbf{Badań}.
+        \item Jeden \textbf{Szpital} może złożyć wiele \textbf{Zapotrzebowań}.
+    \end{itemize}
+\end{itemize}
+
+\subsubsection{Eliminacja powiązań wiele-do-wielu (Tabele asocjacyjne)}
+Zidentyfikowano obszary, w których zachodziła relacja N:M, i rozwiązano je poprzez wprowadzenie tabel pośredniczących:
+
+\begin{itemize}
+    \item \textbf{Realizacja zamówień (\texttt{Oddanie\_Zapotrzebowanie})}:
+    Pojedyncze zapotrzebowanie (np. 1000 ml) może wymagać krwi z kilku różnych oddań (np. 2 worki po 450 ml + 100 ml z trzeciego). Z kolei jedno oddanie może zostać rozdzielone na kilka mniejszych zapotrzebowań. Tabela ta łączy \texttt{id\_oddania} z \texttt{id\_zapotrzebowania}, przechowując informację o konkretnej ilości przekazanej krwi (\texttt{ilosc\_ml}).
+
+    \item \textbf{Historia przepływu (\texttt{Dawca\_Szpital})}:
+    Tabela służąca do celów raportowych i śledzenia drogi "Komu pomogłem?". Łączy Dawcę ze Szpitalem poprzez konkretne Oddanie, umożliwiając Dawcy sprawdzenie, do jakiej placówki trafiła jego krew.
+\end{itemize}
+
+\begin{figure}[h]
+    \centering
+    \includegraphics[width=1.0\textwidth]{erd_diagram.png}
+    \caption{Diagram związków encji (ERD) obrazujący strukturę bazy danych Banku Krwi.}
+    \label{fig:erd}
+\end{figure}
+
+% ============================================================
+\section{Projekt logiczny}
+
+\subsection{Projektowanie tabel (Struktura SQL)}
+Poniżej przedstawiono kod SQL tworzący główne struktury danych (reszta tabel jest w skrypcie sql). Wykorzystano typy danych dopasowane do domeny (np. `VARCHAR(11)` dla PESEL, `CHECK` dla grup krwi).
+
+\subsubsection{Tabela Użytkownicy}
+\begin{lstlisting}
+create table Uzytkownicy (
+    id_uzytkownika serial primary key,
+    login varchar(50) not null unique,
+    haslo varchar(200) not null,
+    rola varchar(20) check (rola in ('ADMIN','PRACOWNIK','SZPITAL','DAWCA')),
+    data_rejestracji date default current_date
+);
+\end{lstlisting}
+
+\subsubsection{Tabela Dawcy}
+\begin{lstlisting}
+create table Dawcy (
+    id_dawcy serial primary key,
+    imie varchar(30) not null,
+    nazwisko varchar(30) not null,
+    pesel varchar(11) unique not null,
+    grupa_krwi varchar(2) check (grupa_krwi in ('A','B','AB','0')),
+    rh varchar(1) check (rh in ('+','-')),
+    kontakt varchar(9),
+    id_uzytkownika int unique references Uzytkownicy(id_uzytkownika),
+    cel_ml int
+);
+\end{lstlisting}
+
+\subsubsection{Tabela Oddania Krwi}
+\begin{lstlisting}
+create table Oddania_krwi (
+    id_oddania serial primary key,
+    data_oddania date not null,
+    ilosc_ml int check (ilosc_ml between 200 and 500),
+    data_waznosci date,
+    id_dawcy int references Dawcy(id_dawcy),
+    id_zgloszenia int references Zgloszenia(id_zgloszenia),
+    id_pracownika int references Pracownicy_banku(id_pracownika),
+    ilosc_pozostala int default 0,
+    status varchar(20) default 'dostepne' check (status in('dostepne','zuzyte','przeterminowane','odrzucone_badanie'))
+);
+\end{lstlisting}
+
+\subsection{Słowniki danych}
+W bazie zastosowano ograniczenia (`CHECK constraints`), które pełnią rolę słowników danych, zapewniając integralność informacji.
+
+\begin{longtable}{|p{4cm}|p{4cm}|p{6cm}|}
+\hline
+\textbf{Atrybut} & \textbf{Tabela} & \textbf{Dozwolone wartości / Ograniczenia} \\ \hline
+rola & Uzytkownicy & 'ADMIN', 'PRACOWNIK', 'SZPITAL', 'DAWCA' \\ \hline
+grupa\_krwi & Dawcy, Zapotrzebowania & 'A', 'B', 'AB', '0' \\ \hline
+rh & Dawcy, Zapotrzebowania & '+', '-' \\ \hline
+stanowisko & Pracownicy\_banku & 'lekarz', 'laborant' \\ \hline
+status & Zgloszenia & 'oczekujace', 'zaakceptowane' \\ \hline
+status & Oddania\_krwi & 'dostepne', 'zuzyte', 'przeterminowane', 'odrzucone\_badanie' \\ \hline
+ilosc\_ml & Oddania\_krwi & Przedział 200 - 500 \\ \hline
+ilosc\_ml & Zapotrzebowania, Oddanie\_Zapotrzebowanie & Większe od 0 \\ \hline
+\end{longtable}
+
+\subsection{Normalizacja tabel}
+Projekt bazy danych został poddany procesowi normalizacji, aby uniknąć redundancji i anomalii.
+
+\begin{itemize}
+    \item \textbf{1NF (Pierwsza postać normalna)}: Wszystkie atrybuty są atomowe (np. imię i nazwisko są w osobnych kolumnach, adres szpitala jest pojedynczym ciągiem znaków traktowanym jako całość w tym kontekście).
+    \item \textbf{2NF (Druga postać normalna)}: Każda tabela posiada klucz główny, a wszystkie atrybuty niekluczowe zależą od całego klucza. W tabelach asocjacyjnych (np. `Oddanie\_Zapotrzebowanie`) atrybuty takie jak `ilosc\_ml` zależą od obu kluczy obcych tworzących klucz główny.
+    \item \textbf{3NF (Trzecia postać normalna)}: Usunięto zależności przechodnie. Na przykład dane szczegółowe o dawcy nie są powielane w tabeli `Oddania\_krwi` – znajduje się tam tylko klucz obcy `id\_dawcy`. Adres szpitala znajduje się w tabeli `Szpitale`, a nie w `Zapotrzebowania`.
+\end{itemize}
+
+\subsection{Denormalizacja}
+W celu optymalizacji zapytań raportowych wprowadzono elementy denormalizacji w widokach, jednak struktura fizyczna tabel pozostaje znormalizowana. Wyjątkiem optymalizacyjnym jest kolumna `ilosc\_pozostala` w tabeli `Oddania\_krwi`, która jest aktualizowana na bieżąco, aby uniknąć każdorazowego sumowania wydań przy sprawdzaniu stanu magazynu.
+
+\subsection{Zaprojektowanie operacji na danych (Kwerendy)}
+Zdefiniowano widoki (Views) w celu uproszczenia warstwy logiki aplikacji i realizacji najczęstsze operacje wyszukiwania. Przykłady:
+
+\textbf{Stan magazynu:}
+\begin{lstlisting}
+CREATE OR REPLACE VIEW widok_stan_krwi AS
+SELECT
+    d.grupa_krwi,
+    d.rh,
+    SUM(o.ilosc_pozostala) AS dostepne_ml
+FROM oddania_krwi o
+JOIN dawcy d ON o.id_dawcy = d.id_dawcy
+WHERE o.status = 'dostepne' AND o.ilosc_pozostala > 0
+GROUP BY d.grupa_krwi, d.rh;
+\end{lstlisting}
+
+\textbf{Raportowanie dużych zapotrzebowań (Agregacja)}\\
+Widok ten wykorzystuje klauzulę \texttt{HAVING}, aby filtrować dane już po pogrupowaniu. Służy do identyfikacji szpitali zgłaszających zapotrzebowanie powyżej 1000 ml na daną grupę krwi.
+
+\begin{lstlisting}
+create view Widok_zapotrzebowania_duze as
+select s.nazwa as szpital,
+       z.grupa_krwi,
+       z.rh,
+       sum(z.ilosc_ml) as suma_ml
+from Zapotrzebowania z
+join Szpitale s on z.id_szpitala = s.id_szpitala
+group by s.nazwa, z.grupa_krwi, z.rh
+having sum(z.ilosc_ml) > 1000;
+\end{lstlisting}
+
+% ============================================================
+\section{Projekt funkcjonalny}
+
+\subsection{Interfejsy do prezentacji i edycji danych}
+System został zaprojektowany jako aplikacja webowa. Struktura formularzy obejmuje:
+\begin{itemize}
+    \item \textbf{Formularz logowania}: Wspólny dla wszystkich ról, dodatkowo dla dawców opcja rejestracji.
+    \item \textbf{Panel Dawcy}: Tabela z historią oddań i badań, formularz "Dodaj zgłoszenie".
+    \item \textbf{Panel Pracownika}: Formularze "Dodaj oddanie", "Wprowadź wynik badania", tabela zarządzania zapotrzebowaniami oraz magazynem krwi.
+    \item \textbf{Panel Szpitala}: Formularz "Zgłoś zapotrzebowanie".
+\end{itemize}
+
+\subsection{Wizualizacja danych (Raporty)}
+Baza danych dostarcza gotowe zestawy danych do raportów poprzez widoki, które wspierają podejmowanie decyzji logistycznych::
+\begin{itemize}
+    \item \texttt{widok\_pracownicy\_aktywnosc}: Raport wydajności pracowników (liczba obsłużonych oddań, badań i zapotrzebowań).
+    \item \texttt{widok\_zapotrzebowania\_duze}: Raport dla szpitali zgłaszających duże zapotrzebowanie ($>1000$ml). Występuje w formie alertu na panelu pracownika.
+    \item \texttt{widok\_statystyki\_badan}: Zestawienie wyników pozytywnych i negatywnych (np. HIV/HCV).
+\end{itemize}
+
+\subsection{Panel sterowania aplikacji}
+Aplikacja posiada główny Dashboard, który dynamicznie zmienia zawartość w zależności od roli zalogowanego użytkownika (`id\_uzytkownika` powiązane z tabelami ról).
+
+\subsection{Makropolecenia (Funkcje i Triggery)}
+W środowisku PostgreSQL rolę makropoleceń i automatyzacji pełnią funkcje składowane (Stored Functions) oraz wyzwalacze (Triggers). Zapewniają one automatyzację logiki biznesowej bez ingerencji użytkownika.
+
+\textbf{Przykład 1: Automatyczne ustawienie daty ważności (35 dni)}
+\begin{lstlisting}
+CREATE OR REPLACE FUNCTION ustaw_date_waznosci()
+RETURNS trigger AS $$
+BEGIN
+    NEW.data_waznosci := NEW.data_oddania + INTERVAL '35 days';
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+\end{lstlisting}
+
+\textbf{Przykład 2: Blokada zbyt częstych oddań (56 dni przerwy)}
+Funkcja sprawdza datę ostatniego oddania dla danego dawcy przed dodaniem nowego zgłoszenia.
+\begin{lstlisting}
+CREATE OR REPLACE FUNCTION blokuj_wczesne_zgloszenie()
+RETURNS trigger AS $$
+DECLARE
+    ostatnie DATE;
+BEGIN
+    SELECT data_oddania INTO ostatnie FROM oddania_krwi
+    WHERE id_dawcy = NEW.id_dawcy ORDER BY data_oddania DESC LIMIT 1;
+
+    IF ostatnie IS NOT NULL AND NEW.data_zgloszenia < ostatnie + INTERVAL '56 days' THEN
+        RAISE EXCEPTION 'Możesz oddać krew dopiero po %', ostatnie + INTERVAL '56 days';
+    END IF;
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+\end{lstlisting}
+
+% ============================================================
+\section{Dokumentacja}
+
+\subsection{Wprowadzanie danych}
+Dane są wprowadzane do systemu na trzy sposoby:
+\begin{enumerate}
+    \item \textbf{Manualnie}: Poprzez formularze aplikacji webowej (rejestracja, zgłoszenia).
+    \item \textbf{Automatycznie (Triggery)}: System sam uzupełnia pola takie jak `data\_rejestracji` (DEFAULT current\_date), `data\_waznosci` czy `status`.
+    \item \textbf{Skrypt inicjalizujący}: Baza została zasilona danymi testowymi przy użyciu instrukcji `INSERT` zawartych w pliku `bank\_krwi.sql` (m.in. utworzenie kont użytkowników).
+\end{enumerate}
+
+\subsection{Dokumentacja użytkownika (Instrukcja)}
+
+\textbf{Krótka ścieżka obsługi dla Dawcy:}
+\begin{enumerate}
+    \item Wejdź na stronę główną i wybierz "Zarejestruj się" lub "Zaloguj się" jeśli masz konto.
+    \item Po zalogowaniu wybierz zakładkę "Zgłoszenia i historia".
+    \item Kliknij "Wyślij zgłoszenie" – system sprawdzi, czy upłynął wymagany czas od ostatniego oddania.
+    \item Po wizycie w punkcie pobrań, historia oddania pojawi się w tej samej zakładce co powyżej.
+\end{enumerate}
+
+\textbf{Krótka ścieżka obsługi dla Pracownika:}
+\begin{enumerate}
+    \item Zaloguj się na konto pracownicze i sprawdź Panel (system wyświetli alerty o dużych zapotrzebowaniach).
+    \item Aby przyjąć krew: wejdź w zakładkę "Oddania", wyszukaj dawcę po peselu i dodaj nowe oddanie (system automatycznie ustawi datę ważności).
+    \item Aby uzupełnić wyniki: przejdź do zakładki "Badania", wybierz oddanie i wprowadź wynik (np. HIV/HCV) – w przypadku wyniku pozytywnego system zablokuje jednostkę.
+    \item Aby wydać krew: w sekcji "Zapotrzebowania" sprawdź listę oczekujących zamówień i po wydaniu krwi zmień status na "Zrealizowane".
+\end{enumerate}
+
+\textbf{Krótka ścieżka obsługi dla Szpitala:}
+\begin{enumerate}
+    \item Zaloguj się danymi placówki medycznej.
+    \item Wybierz opcję "Zgłoś zapotrzebowanie".
+    \item Wypełnij formularz określając grupę krwi, czynnik Rh oraz ilość (ml).
+    \item Śledź status swojego zamówienia w tabeli "Moje zapotrzebowania" – gdy pracownik banku wyda krew, status zmieni się z "Oczekujące" na "Zrealizowane".
+\end{enumerate}
+
+\subsection{Opracowanie dokumentacji technicznej}
+Projekt zrealizowano w architekturze klient-serwer, uruchamianej w środowisku lokalnym (localhost).
+\begin{itemize}
+    \item \textbf{Baza danych}: PostgreSQL 14+. Wykorzystano rozszerzenie `pgcrypto` do bezpiecznego haszowania haseł.
+    \item \textbf{Backend}: Python (Flask) łączący się z bazą przez sterownik `psycopg2`.
+\item \textbf{Struktura plików}:
+    \begin{itemize}
+        \item \texttt{bank\_krwi.sql} – kompletny skrypt inicjalizujący bazę danych. Zawiera definicje DDL (tworzenie tabel, relacji, indeksów), implementację logiki biznesowej po stronie serwera SQL (funkcje PL/pgSQL, wyzwalacze/triggery), definicje widoków raportowych oraz instrukcje DML zasilające system danymi startowym.
+
+        \item \texttt{db/connection.py} – moduł odpowiedzialny za nawiązywanie połączenia z bazą danych. Wykorzystuje bibliotekę \texttt{psycopg2} do komunikacji z PostgreSQL. Centralizuje konfigurację parametrów połączenia (host, port, poświadczenia) oraz automatycznie ustawia ścieżkę wyszukiwania (\texttt{search\_path}) na schemat \texttt{bank\_krwi}, co upraszcza zapytania SQL w aplikacji.
+
+        \item \texttt{app.py} – główny plik wykonywalny aplikacji oparty na frameworku Flask. Pełni rolę kontrolera: obsługuje routing (ścieżki URL), zarządza sesjami użytkowników, realizuje mechanizmy autoryzacji (sprawdzanie ról) oraz pośredniczy w wymianie danych między formularzami a bazą danych.
+
+        \item \texttt{templates/} – katalog zawierający szablony widoków HTML. Wykorzystuje silnik szablonów Jinja2 do dynamicznego renderowania danych pobranych z bazy (np. tabele wyników, alerty). Warstwa prezentacji jest zintegrowana z frameworkiem Bootstrap 5, co zapewnia responsywność interfejsu.
+
+        \item \texttt{static/style.css} – arkusz stylów definiujący unikalną szatę graficzną aplikacji. Rozszerza standardowe komponenty frameworka Bootstrap (takie jak tabele i przyciski), nadpisując ich zmienne i wprowadzając dedykowany motyw kolorystyczny oparty na głębokiej czerwieni (\texttt{\#8a0303}), co zapewnia interfejsowi wygląd adekwatny do tematyki Banku Krwi.
+    \end{itemize}
+\end{itemize}
+
+\subsection{Wykaz literatury}
+\begin{itemize}
+    \item Dokumentacja PostgreSQL: \url{https://www.postgresql.org/docs/}
+    \item Dokumentacja Flask: \url{https://flask.palletsprojects.com/}
+    \item Materiały z wykładów przedmiotu "Bazy Danych I".
+    \item Dokumentacja Bootstrap 5: \url{https://getbootstrap.com/}
+    \item Wikipedia:
+    \url{https://pl.wikipedia.org/wiki/Posta%C4%87_normalna_(bazy_danych)}
+\end{itemize}
+
+\end{document}
