@@ -1,0 +1,64 @@
+{% extends "base.html" %}
+
+{% block title %}Profil pracownika{% endblock %}
+
+{% block content %}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1>Profil pracownika</h1>
+    <a href="/pracownik" class="btn btn-outline-secondary">⬅ Powrót do panelu</a>
+</div>
+
+<div class="card shadow mb-4">
+    <div class="card-header bg-krew text-white">
+        <h3 class="h5 mb-0">Dane służbowe</h3>
+    </div>
+
+    <div class="card-body">
+        <div class="row align-items-center">
+
+            <div class="col-md-3 text-center mb-4 mb-md-0 border-end-md">
+                <div class="d-inline-flex justify-content-center align-items-center rounded-circle bg-light border border-danger shadow-sm" style="width: 120px; height: 120px;">
+                    <span class="display-3">👨‍⚕️</span>
+                </div>
+                <p class="text-muted small mt-2 mb-0">Pracownik medyczny</p>
+            </div>
+
+            <div class="col-md-9 ps-md-4">
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label class="small text-muted text-uppercase">Imię</label>
+                        <p class="fs-4 fw-bold mb-0">{{ imie }}</p>
+                    </div>
+
+                    <div class="col-md-6">
+                        <label class="small text-muted text-uppercase">Nazwisko</label>
+                        <p class="fs-4 fw-bold mb-0">{{ nazwisko }}</p>
+                    </div>
+
+                    <div class="col-12">
+                        <hr class="text-muted">
+                    </div>
+
+                    <div class="col-12">
+                        <label class="small text-muted text-uppercase mb-1">Stanowisko</label>
+                        <div>
+                            <span class="badge bg-krew fs-6 px-3 py-2">
+                                {{ stanowisko }}
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <div class="card-footer bg-light text-end">
+        <a href="/pracownik/dane/edytuj" class="btn btn-warning px-4">
+            Edytuj dane
+        </a>
+    </div>
+</div>
+
+{% endblock %}
