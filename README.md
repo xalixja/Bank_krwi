@@ -1,5 +1,5 @@
-#Projekt: System Zarządzania Bankiem Krwi
-#Autorka: Alicja Borek
+# Projekt: System Zarządzania Bankiem Krwi
+# Autorka: Alicja Borek
 
 Aplikacja webowa wspierająca procesy w Regionalnym Centrum Krwiodawstwa i Krwiolecznictwa. System umożliwia zarządzanie dawcami, zapasami krwi, badaniami oraz realizację zapotrzebowań szpitali.
 
