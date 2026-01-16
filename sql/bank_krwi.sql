@@ -45,7 +45,7 @@ create table Zgloszenia (
     id_zgloszenia serial primary key,
     id_dawcy int references Dawcy(id_dawcy),
     data_zgloszenia date default current_date,
-    status varchar(20) check (status in ('oczekujace','zaakceptowane'))
+    status varchar(20) check (status in ('oczekujace','zrealizowane'))
 );
 
 create table Oddania_krwi (
@@ -75,7 +75,7 @@ create table Badania (
     id_badania serial primary key,
     id_oddania int references Oddania_krwi(id_oddania),
     rodzaj_badania varchar(50) not null,
-    wynik varchar(50) check (wynik in('pozytywny', 'negatywny'),
+    wynik varchar(50) check (wynik in('pozytywny', 'negatywny')),
     data_badania date,
     id_pracownika int references Pracownicy_banku(id_pracownika)
 );
@@ -132,7 +132,7 @@ with d as (
   select id_dawcy from Dawcy where pesel in ('90010112345','92050567890')
 )
 insert into Zgloszenia (id_dawcy, data_zgloszenia, status) values
-((select id_dawcy from Dawcy where pesel='90010112345'), '2025-12-01', 'zaakceptowane'),
+((select id_dawcy from Dawcy where pesel='90010112345'), '2025-12-01', 'zrealizowane'),
 ((select id_dawcy from Dawcy where pesel='92050567890'), '2025-12-02', 'oczekujace');
 
 -- Oddania_krwi (trigger uzupełni grupa_krwi i rh; nie podajemy ich ręcznie)
@@ -389,7 +389,7 @@ RETURNS trigger AS $$
 BEGIN
     -- Aktualizujemy najstarsze oczekujące zgłoszenie danego dawcy
     UPDATE zgloszenia
-    SET status = 'zaakceptowane'
+    SET status = 'zrealizowane'
     WHERE id_zgloszenia = (
         SELECT id_zgloszenia
         FROM zgloszenia
@@ -452,6 +452,38 @@ BEFORE INSERT ON zgloszenia
 FOR EACH ROW
 EXECUTE FUNCTION blokuj_wczesne_zgloszenie();
 
+-- 1. Funkcja, która znajdzie ID dawcy i ID szpitala, a potem wpisze je do tabeli historii
+CREATE OR REPLACE FUNCTION automatyczny_dawca_szpital()
+RETURNS trigger AS $$
+DECLARE
+    v_id_dawcy INT;
+    v_id_szpitala INT;
+BEGIN
+    -- Pobieramy ID dawcy na podstawie oddania
+    SELECT id_dawcy INTO v_id_dawcy 
+    FROM oddania_krwi 
+    WHERE id_oddania = NEW.id_oddania;
+
+    -- Pobieramy ID szpitala na podstawie zapotrzebowania
+    SELECT id_szpitala INTO v_id_szpitala 
+    FROM zapotrzebowania 
+    WHERE id_zapotrzebowania = NEW.id_zapotrzebowania;
+
+    -- Wstawiamy rekord do tabeli Dawca_Szpital
+    -- (Używamy ON CONFLICT DO NOTHING, żeby nie wywaliło błędu, jak już coś tam jest)
+    INSERT INTO Dawca_Szpital (id_dawcy, id_szpitala, id_oddania, data_przekazania)
+    VALUES (v_id_dawcy, v_id_szpitala, NEW.id_oddania, CURRENT_DATE)
+    ON CONFLICT DO NOTHING;
+
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER trg_auto_dawca_szpital
+AFTER INSERT ON Oddanie_Zapotrzebowanie
+FOR EACH ROW
+EXECUTE FUNCTION automatyczny_dawca_szpital();
+
 -- ==========================================
 -- DODATKOWE DANE TESTOWE (ROZSZERZENIE)
 -- ==========================================
@@ -485,9 +517,9 @@ insert into Pracownicy_banku (imie, nazwisko, stanowisko, id_uzytkownika) values
 
 -- 4. Zgłoszenia
 insert into Zgloszenia (id_dawcy, data_zgloszenia, status) values
-((select id_dawcy from Dawcy where pesel='85021411223'), '2025-12-08', 'zaakceptowane'), -- Tomasz
-((select id_dawcy from Dawcy where pesel='99032055443'), '2025-12-09', 'zaakceptowane'), -- Ewa
-((select id_dawcy from Dawcy where pesel='95111122334'), '2025-12-10', 'zaakceptowane'); -- Kamil
+((select id_dawcy from Dawcy where pesel='85021411223'), '2025-12-08', 'zrealizowane'), -- Tomasz
+((select id_dawcy from Dawcy where pesel='99032055443'), '2025-12-09', 'zrealizowane'), -- Ewa
+((select id_dawcy from Dawcy where pesel='95111122334'), '2025-12-10', 'zrealizowane'); -- Kamil
 
 
 -- 5. Oddania Krwi

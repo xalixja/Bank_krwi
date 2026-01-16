@@ -77,30 +77,40 @@ def register():
         conn = get_db()
         cur = conn.cursor()
 
-        #dodanie użytkownika
-        cur.execute("""
-                    INSERT INTO uzytkownicy (login, haslo, rola, data_rejestracji)
-                    VALUES (%s, public.crypt(%s, public.gen_salt('bf')), 'DAWCA', CURRENT_DATE)
-                        RETURNING id_uzytkownika;
-                    """, (login, haslo))
+        #sprawdzam czy login jest zajety
+        cur.execute("SELECT id_uzytkownika FROM uzytkownicy WHERE login = %s",(login,))
+        istniejacy_uzytkownik = cur.fetchone()
 
-        id_uzytkownika = cur.fetchone()[0]
+        if istniejacy_uzytkownik:
+            error = "Ten login jest już zajęty. Wybierz inny."
+        else:
+            #dodanie użytkownika
+            cur.execute("""
+                        INSERT INTO uzytkownicy (login, haslo, rola, data_rejestracji)
+                        VALUES (%s, public.crypt(%s, public.gen_salt('bf')), 'DAWCA', CURRENT_DATE)
+                            RETURNING id_uzytkownika;
+                        """, (login, haslo))
 
-        #dodanie dawcy
-        cur.execute("""
-                    INSERT INTO dawcy (imie, nazwisko, pesel, grupa_krwi, rh, kontakt, id_uzytkownika)
-                    VALUES (%s, %s, %s, %s, %s, %s, %s);
-                    """, (imie, nazwisko, pesel, grupa, rh, kontakt, id_uzytkownika))
+            id_uzytkownika = cur.fetchone()[0]
 
-        conn.commit()
+            #dodanie dawcy
+            cur.execute("""
+                        INSERT INTO dawcy (imie, nazwisko, pesel, grupa_krwi, rh, kontakt, id_uzytkownika)
+                        VALUES (%s, %s, %s, %s, %s, %s, %s);
+                        """, (imie, nazwisko, pesel, grupa, rh, kontakt, id_uzytkownika))
+
+            #automatyczne logowanie po rejestracji
+            session["user_id"] = id_uzytkownika
+            session["rola"] = "DAWCA"
+
+            conn.commit()
+            cur.close()
+            conn.close()
+
+            return redirect("/welcome")
+
         cur.close()
         conn.close()
-
-        #automatyczne logowanie po rejestracji
-        session["user_id"] = id_uzytkownika
-        session["rola"] = "DAWCA"
-
-        return redirect("/welcome")
 
     return render_template("register.html", error=error)
 
