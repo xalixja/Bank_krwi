@@ -32,7 +32,7 @@ Upewnij się, że masz zainstalowane:
 
 ### 2. Klonowanie repozytorium
 ```bash
-git clone [https://github.com/xalixja/Bank_krwi.git](https://github.com/xalixja/Bank_krwi.git)
+git clone https://github.com/xalixja/Bank_krwi.git
 cd Bank_krwi
 ```
 
@@ -64,14 +64,15 @@ pip install -r requirements.txt
   Baza: postgres
 -Uruchom skrypt inicjalizujący bazę danych. Możesz to zrobić w pgAdmin, DBeaver lub z linii komend:
 ```bash
+createdb -U postgres postgres
 psql -U postgres -d postgres -f bank_krwi.sql
 ```
-Skrypt ten utworzy schemat bank_krwi, tabele, triggery, widoki oraz zasili bazę danymi testowymi.
+Skrypt ten utworzy bazę postgres, schemat bank_krwi, tabele, triggery, widoki oraz zasili bazę danymi testowymi.
 
 ### 6. Uruchomienie aplikacji
 Będąc w głównym katalogu projektu (i mając aktywne środowisko wirtualne), uruchom:
 ```bash
-python app.py
+python Bank_krwi/app.py
 ```
 Aplikacja powinna być dostępna pod adresem: http://127.0.0.1:5000
 
