@@ -23,7 +23,7 @@ create table Dawcy (
     rh varchar(1) check (rh in ('+','-')),
     kontakt varchar(9),
     id_uzytkownika int unique references Uzytkownicy(id_uzytkownika),
-    cel_ml int default 0
+    cel_ml int default 0 CHECK (cel_ml BETWEEN 0 AND 126900)
 );
 
 create table Pracownicy_banku (

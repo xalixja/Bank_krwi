@@ -31,13 +31,13 @@
 
                     <div class="col-md-6">
                         <label class="form-label fw-bold">PESEL</label>
-                        <input type="text" name="pesel" value="{{ pesel }}" class="form-control" required maxlength="11">
+                        <input type="text" name="pesel" value="{{ pesel }}" class="form-control" required maxlength="11" minlength="11">
                         <div class="form-text">Numer PESEL służy do identyfikacji w systemie medycznym.</div>
                     </div>
 
                     <div class="col-md-6">
                         <label class="form-label fw-bold">Kontakt</label>
-                        <input type="text" name="kontakt" value="{{ kontakt }}" class="form-control" required placeholder="Nr telefonu lub email">
+                        <input type="text" name="kontakt" value="{{ kontakt }}" class="form-control" required placeholder="Nr telefonu" minlength="9" maxlength="9">
                     </div>
 
                     <div class="col-12 mt-4">

@@ -45,7 +45,7 @@
                         <label class="col-form-label">Zmień cel (ml):</label>
                     </div>
                     <div class="col-auto">
-                        <input type="number" name="cel" value="{{ cel_ml }}" min="0" class="form-control" style="width: 120px;" required>
+                        <input type="number" name="cel" value="{{ cel_ml }}" min="0" max="126900" class="form-control" style="width: 120px;" required>
                     </div>
                     <div class="col-auto">
                         <button type="submit" class="btn btn-sm btn-outline-dark">Zapisz</button>
@@ -125,7 +125,7 @@
 
         <div class="card shadow mb-4">
             <div class="card-header bg-krew text-white">
-                <h5 class="mb-0">⚡ Szybkie akcje</h5>
+                <h5 class="mb-0">Szybkie akcje</h5>
             </div>
             <div class="card-body d-grid gap-2">
                 <a href="/dawca/zgloszenia-oddania" class="btn btn-outline-danger text-start p-3">

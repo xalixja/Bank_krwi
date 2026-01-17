@@ -5,7 +5,7 @@ import psycopg2
 from datetime import date, timedelta
 
 app = Flask(__name__)
-app.secret_key = "koko"   # zmień na swój
+app.secret_key = "koko"
 
 def login_required(role=None):
     def decorator(f):
@@ -129,7 +129,7 @@ def panel_dawcy():
     conn = get_db()
     cur = conn.cursor()
 
-    # 1. Główne dane dawcy
+    #główne dane dawcy
     cur.execute("""
                 SELECT
                     d.imie,
@@ -154,7 +154,7 @@ def panel_dawcy():
 
     dane = cur.fetchone()
 
-    # Zabezpieczenie, gdyby nie było dawcy
+    #zabezpieczenie, gdyby nie było dawcy
     if not dane:
         cur.close()
         conn.close()
@@ -162,25 +162,25 @@ def panel_dawcy():
 
     id_dawcy = dane[6]
 
-    # 2. Cel dawcy
+    #cel dawcy
     cur.execute("""
                 SELECT cel_ml
                 FROM dawcy
                 WHERE id_dawcy = %s;
                 """, (id_dawcy,))
-    row_cel = cur.fetchone() # Lepiej pobrać wiersz i sprawdzić
-    cel = row_cel[0] if row_cel else 0
+    row_cel = cur.fetchone()
+    cel = row_cel[0]
 
-    # 3. Suma ml z widoku
+    #suma ml z widoku
     cur.execute("""
                 SELECT suma_ml
                 FROM widok_suma_ml
                 WHERE id_dawcy = %s;
                 """, (id_dawcy,))
     suma = cur.fetchone()
-    suma_ml = suma[0] if suma else 0 # Jeśli None to 0
+    suma_ml = suma[0] if suma else 0
 
-    # 4. Daty oddań z widoku (Tu jest Twoje 'ostatnie')
+    #daty oddań z widoku
     cur.execute("""
                 SELECT pierwsze_oddanie, ostatnie_oddanie
                 FROM widok_dat_oddan
@@ -190,9 +190,6 @@ def panel_dawcy():
     pierwsze = daty[0] if daty else None
     ostatnie = daty[1] if daty else None
 
-    # ---------------------------------------------------------
-    # NOWOŚĆ: Obliczanie daty kolejnego oddania (+56 dni)
-    # ---------------------------------------------------------
     najblizszy_termin = None  # Domyślnie None -> HTML wyświetli "Teraz!"
 
     if ostatnie:
@@ -205,7 +202,7 @@ def panel_dawcy():
             najblizszy_termin = wymagana_przerwa
     # ---------------------------------------------------------
 
-    # 5. Historia badań z widoku
+    #historia badań z widoku
     cur.execute("""
                 SELECT data_badania, rodzaj_badania, wynik
                 FROM widok_historia_badania
@@ -225,10 +222,7 @@ def panel_dawcy():
         grupa=dane[2],
         rh=dane[3],
         liczba_oddan=dane[4],
-
-        # Tutaj najważniejsza zmiana: przekazujemy obliczoną datę, a nie status z SQL
         najblizsze=najblizszy_termin,
-
         suma_ml=suma_ml,
         cel_ml=cel,
         pierwsze=pierwsze,
@@ -334,10 +328,6 @@ def zgloszenia_oddania():
 
     id_dawcy = row[0]
 
-    # ---------------------------------------------------------
-    # NOWOŚĆ: Obliczanie sugerowanej daty (56 dni przerwy)
-    # Robimy to TUTAJ, żeby zmienna była dostępna i dla GET, i dla POST (w razie błędu)
-    # ---------------------------------------------------------
     cur.execute("SELECT MAX(data_oddania) FROM oddania_krwi WHERE id_dawcy = %s", (id_dawcy,))
     wynik_daty = cur.fetchone()
     ostatnia_data = wynik_daty[0] if wynik_daty else None
@@ -400,12 +390,10 @@ def zgloszenia_oddania():
                 error=error_message,
                 zgloszenia=zgloszenia,
                 oddania=oddania,
-                sugerowana_data=sugerowana_data  # <--- Przekazujemy datę przy błędzie
+                sugerowana_data=sugerowana_data
             )
 
-    # -------------------------
     # CZĘŚĆ GET — normalne wyświetlanie strony
-    # -------------------------
 
     cur.execute("""
                 SELECT id_zgloszenia, data_zgloszenia, status
@@ -430,7 +418,7 @@ def zgloszenia_oddania():
         "zgloszenia_oddania.html",
         zgloszenia=zgloszenia,
         oddania=oddania,
-        sugerowana_data=sugerowana_data # <--- Przekazujemy datę do widoku
+        sugerowana_data=sugerowana_data
     )
 
 @app.route("/dawca/zgloszenia-oddania/usun/<int:id_zgloszenia>", methods=["POST"])
@@ -686,11 +674,8 @@ def badania():
         id_pracownika=id_pracownika,
         negatywne=negatywne,
         pozytywne=pozytywne,
-        today=date.today()  # ← potrzebne do max="..."
+        today=date.today()
     )
-
-
-from datetime import date
 
 @app.route("/pracownik/badania/edytuj/<int:id_badania>", methods=["GET", "POST"])
 @login_required(role="PRACOWNIK")
@@ -754,7 +739,7 @@ def edytuj_badanie(id_badania):
     return render_template(
         "edytuj_badanie.html",
         badanie=badanie,
-        today=date.today()  # ← potrzebne do max="..."
+        today=date.today()
     )
 
 
@@ -800,12 +785,12 @@ def oddania():
         ilosc_ml = request.form["ilosc_ml"]
         data_oddania = request.form["data_oddania"]
 
-        # 1. Walidacja daty
+        # Walidacja daty
         if data_oddania > str(date.today()):
             error = "Data oddania nie może być z przyszłości."
         else:
             try:
-                # 2. Szukamy ID dawcy na podstawie PESEL
+                # Szukamy ID dawcy na podstawie PESEL
                 cur.execute("SELECT id_dawcy FROM Dawcy WHERE pesel = %s;", (pesel,))
                 dawca = cur.fetchone()
 
@@ -814,7 +799,7 @@ def oddania():
                 else:
                     id_dawcy = dawca[0] # Wyciągamy ID z krotki
 
-                    # 3. Próba zapisu oddania
+                    # Próba zapisu oddania
                     # Używamy znalezionego id_dawcy
                     cur.execute("""
                                 INSERT INTO oddania_krwi (id_dawcy, id_pracownika, ilosc_ml, data_oddania, ilosc_pozostala)
@@ -870,7 +855,7 @@ def edytuj_oddanie(id_oddania):
         data_oddania = request.form["data_oddania"]
         ilosc_pozostala = oddanie[4]
 
-        # 1. Walidacja daty
+        # Walidacja daty
         if data_oddania > str(date.today()):
             cur.close()
             conn.close()
@@ -880,7 +865,7 @@ def edytuj_oddanie(id_oddania):
                 error="Data oddania nie może być z przyszłości."
             )
 
-        # 2. Walidacja ilości
+        # Walidacja ilości
         if int(ilosc_ml) < int(ilosc_pozostala):
             cur.close()
             conn.close()
@@ -890,7 +875,6 @@ def edytuj_oddanie(id_oddania):
                 error="Ilość początkowa musi być większa niż ilość pozostała."
             )
 
-        # 3. UPDATE
         cur.execute("""
                     UPDATE oddania_krwi
                     SET ilosc_ml = %s,
@@ -929,9 +913,7 @@ def zapotrzebowania():
     conn = get_db()
     cur = conn.cursor()
 
-    # -----------------------------
-    # 1. ZMIANA STATUSU ZAPOTRZEBOWANIA
-    # -----------------------------
+    # ZMIANA STATUSU ZAPOTRZEBOWANIA
     if request.method == "POST" and "id_zapotrzebowania" in request.form:
         id_zapotrzebowania = request.form["id_zapotrzebowania"]
         nowy_status = request.form["nowy_status"]
@@ -947,9 +929,7 @@ def zapotrzebowania():
         conn.close()
         return redirect("/pracownik/zapotrzebowania")
 
-    # -----------------------------
-    # 2. FILTROWANIE
-    # -----------------------------
+    # FILTROWANIE
     filter_status = request.form.get("filter_status") if request.method == "POST" else None
 
     base_query = """
@@ -981,7 +961,7 @@ def zrealizuj_zapotrzebowanie(id_zapotrzebowania):
     cur = conn.cursor()
 
     try:
-        # 1. Id pracownika
+        # Id pracownika
         cur.execute("""
                     SELECT id_pracownika
                     FROM pracownicy_banku
@@ -989,7 +969,7 @@ def zrealizuj_zapotrzebowanie(id_zapotrzebowania):
                     """, (user_id,))
         id_pracownika = cur.fetchone()[0]
 
-        # 2. Zapotrzebowanie - POBIERAMY TEŻ STATUS
+        # Zapotrzebowanie - POBIERAMY TEŻ STATUS
         cur.execute("""
                     SELECT grupa_krwi, rh, ilosc_ml, status
                     FROM zapotrzebowania
@@ -1002,14 +982,14 @@ def zrealizuj_zapotrzebowanie(id_zapotrzebowania):
 
         grupa, rh, ilosc_potrzebna, status = dane_zapotrzebowania
 
-        # --- ZABEZPIECZENIE 1: Sprawdź czy już nie zrealizowane ---
+        # Sprawdź czy już nie zrealizowane
         if status == 'zrealizowane':
             cur.close()
             conn.close()
-            flash("To zapotrzebowanie zostało już zrealizowane!", "warning")  # <--- ZMIANA
-            return redirect("/pracownik/zapotrzebowania")                   # <--- ZMIANA
+            flash("To zapotrzebowanie zostało już zrealizowane!", "warning")
+            return redirect("/pracownik/zapotrzebowania")
 
-        # 3. Sprawdzenie stanu magazynowego
+        # Sprawdzenie stanu magazynowego
         cur.execute("""
                     SELECT dostepne_ml
                     FROM widok_stan_krwi
@@ -1020,11 +1000,10 @@ def zrealizuj_zapotrzebowanie(id_zapotrzebowania):
         if wynik is None or wynik[0] < ilosc_potrzebna:
             cur.close()
             conn.close()
-            # Tutaj wstawiamy Flash Message zamiast return string
-            flash(f"Brak wystarczającej ilości krwi w magazynie! Brakuje {ilosc_potrzebna - (wynik[0] if wynik else 0)} ml.", "danger") # <--- ZMIANA
-            return redirect("/pracownik/zapotrzebowania") # <--- ZMIANA: Powrót na tę samą stronę
+            flash(f"Brak wystarczającej ilości krwi w magazynie! Brakuje {ilosc_potrzebna - (wynik[0] if wynik else 0)} ml.", "danger")
+            return redirect("/pracownik/zapotrzebowania")
 
-        # 4. Pobranie oddań (FIFO)
+        # Pobranie oddań (FIFO)
         cur.execute("""
                     SELECT id_oddania, ilosc_pozostala
                     FROM widok_magazyn
@@ -1045,7 +1024,6 @@ def zrealizuj_zapotrzebowanie(id_zapotrzebowania):
             # Oblicz ile bierzemy z tego worka
             ilosc_do_pobrania = min(ilosc_pozostala, pozostalo)
 
-            # --- ZABEZPIECZENIE 2: INSERT ON CONFLICT (Dla PostgreSQL) ---
             # Jeśli wpis już istnieje (np. po błędzie), aktualizujemy go zamiast wyrzucać błąd
             cur.execute("""
                         INSERT INTO oddanie_zapotrzebowanie (id_oddania, id_zapotrzebowania, ilosc_ml)
@@ -1078,10 +1056,10 @@ def zrealizuj_zapotrzebowanie(id_zapotrzebowania):
             conn.rollback()
             cur.close()
             conn.close()
-            flash("Wystąpił błąd spójności danych. Operacja anulowana.", "danger") # <--- ZMIANA
+            flash("Wystąpił błąd spójności danych. Operacja anulowana.", "danger")
             return redirect("/pracownik/zapotrzebowania")
 
-        # 5. Aktualizacja zapotrzebowania
+        # Aktualizacja zapotrzebowania
         cur.execute("""
                     UPDATE zapotrzebowania
                     SET status = 'zrealizowane',
@@ -1094,11 +1072,11 @@ def zrealizuj_zapotrzebowanie(id_zapotrzebowania):
         cur.close()
         conn.close()
 
-        flash("Pomyślnie zrealizowano zapotrzebowanie!", "success") # <--- Opcjonalnie: Sukces też jako alert
+        flash("Pomyślnie zrealizowano zapotrzebowanie!", "success")
         return redirect("/pracownik/zapotrzebowania")
 
     except Exception as e:
-        conn.rollback() # Bardzo ważne: rollback przy każdym błędzie
+        conn.rollback()
         cur.close()
         conn.close()
         # Wyłapujemy niespodziewane błędy i też pokazujemy jako alert
@@ -1121,11 +1099,7 @@ def magazyn():
     if rh == "":
         rh = None
 
-    # NAPRAWA PLUSIKA: Czasami przeglądarka wysyła "+" jako spację " "
-    if rh == ' ':
-        rh = '+'
-
-    # --- 1. KREW DOSTĘPNA (BUDOWANIE ZAPYTANIA) ---
+    # KREW DOSTĘPNA
     query = """
             SELECT id_oddania, dawca, grupa_krwi, rh,
                    ilosc_poczatkowa, ilosc_pozostala, status, data_waznosci
@@ -1150,7 +1124,7 @@ def magazyn():
     cur.execute(query, tuple(params))
     dostepne = cur.fetchall()
 
-    # --- 2. POZOSTAŁE STATUSY (Bez zmian) ---
+    # POZOSTAŁE STATUSY bez filtrow
     cur.execute("""
                 SELECT id_oddania, dawca, grupa_krwi, rh,
                        ilosc_poczatkowa, ilosc_pozostala, status, data_waznosci
@@ -1206,8 +1180,6 @@ def powiazania():
     conn.close()
 
     return render_template("powiazania.html", powiazania=powiazania)
-
-
 
 
 @app.route("/szpital")
@@ -1409,7 +1381,6 @@ def usun_zapotrzebowanie_szpital(id_zapotrzebowania):
 
     return redirect("/szpital/zapotrzebowania")
 
-
 @app.route("/szpital/zapotrzebowania/dodaj", methods=["GET", "POST"])
 @login_required(role="SZPITAL")
 def dodaj_zapotrzebowanie():
@@ -1520,7 +1491,7 @@ def admin_uzytkownicy_dodaj():
     conn = get_db()
     cur = conn.cursor()
 
-    # 1. Dodajemy użytkownika
+    # Dodajemy użytkownika
     cur.execute("""
                 INSERT INTO uzytkownicy (login, haslo, rola)
                 VALUES (%s, public.crypt(%s, public.gen_salt('bf')), %s)
@@ -1529,7 +1500,7 @@ def admin_uzytkownicy_dodaj():
 
     id_uzytkownika = cur.fetchone()[0]
 
-    # 2. W zależności od roli dodajemy dane do odpowiedniej tabeli
+    # W zależności od roli dodajemy dane do odpowiedniej tabeli
 
     if rola == "DAWCA":
         cur.execute("""
@@ -1593,7 +1564,7 @@ def admin_uzytkownicy_edytuj(id_uzytkownika):
         cur.execute("""
                     UPDATE uzytkownicy
                     SET login = %s,
-                        haslo = public.crypt(%s, gen_salt('bf'))
+                        haslo = public.crypt(%s, public.gen_salt('bf'))
                     WHERE id_uzytkownika = %s;
                     """, (login, haslo, id_uzytkownika))
 
@@ -1635,7 +1606,7 @@ def edytuj_uzytkownika():
         cur.execute("""
                     UPDATE uzytkownicy
                     SET login = %s,
-                        haslo = crypt(%s, gen_salt('bf'))
+                        haslo = public.crypt(%s, public.gen_salt('bf'))
                     WHERE id_uzytkownika = %s;
                     """, (login, haslo, user_id))
 
