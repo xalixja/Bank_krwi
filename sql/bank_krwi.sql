@@ -23,7 +23,7 @@ create table Dawcy (
     rh varchar(1) check (rh in ('+','-')),
     kontakt varchar(9),
     id_uzytkownika int unique references Uzytkownicy(id_uzytkownika),
-    cel_ml int
+    cel_ml int default 0
 );
 
 create table Pracownicy_banku (
@@ -98,7 +98,7 @@ create table Dawca_Szpital (
 );
 
 
---dodawanie danych
+--dodawanie danych testowych
 -- Uzytkownicy
 insert into Uzytkownicy (login, haslo, rola) values
 ('admin1', crypt('adminpass', gen_salt('bf')), 'ADMIN'),
@@ -111,7 +111,7 @@ insert into Uzytkownicy (login, haslo, rola) values
 INSERT INTO Uzytkownicy (login, haslo, rola)
 VALUES ('admin2', crypt('admin123', gen_salt('bf')), 'ADMIN');
 
--- Dawcy (wiążemy po loginie, nie po "zgadywanym" ID)
+-- Dawcy (wiążemy po loginie)
 insert into Dawcy (imie, nazwisko, pesel, grupa_krwi, rh, kontakt, id_uzytkownika) values
 ('Jan',  'Kowalski', '90010112345', 'A',  '+', '123456789',
  (select id_uzytkownika from Uzytkownicy where login='dawca1')),
@@ -135,7 +135,7 @@ insert into Zgloszenia (id_dawcy, data_zgloszenia, status) values
 ((select id_dawcy from Dawcy where pesel='90010112345'), '2025-12-01', 'zrealizowane'),
 ((select id_dawcy from Dawcy where pesel='92050567890'), '2025-12-02', 'oczekujace');
 
--- Oddania_krwi (trigger uzupełni grupa_krwi i rh; nie podajemy ich ręcznie)
+-- Oddania_krwi
 insert into Oddania_krwi (data_oddania, ilosc_ml, data_waznosci, id_dawcy, id_zgloszenia, id_pracownika) values
 ('2025-12-03', 450, '2026-01-14',
  (select id_dawcy from Dawcy where pesel='90010112345'),
@@ -201,7 +201,6 @@ SELECT
     o.data_waznosci
 FROM oddania_krwi o
 JOIN dawcy d ON o.id_dawcy = d.id_dawcy;
-
 
 create view Widok_status_zapotrzebowan as
 select z.id_zapotrzebowania,
@@ -294,7 +293,6 @@ WHERE o.status = 'dostepne'
   AND o.ilosc_pozostala > 0
 GROUP BY d.grupa_krwi, d.rh;
 
-
 CREATE VIEW widok_suma_ml AS
 SELECT 
     id_dawcy,
@@ -342,8 +340,6 @@ BEGIN
     RETURN NEW;
 END;
 $$ LANGUAGE plpgsql;
-
-DROP TRIGGER IF EXISTS trg_oddania_data_waznosci ON oddania_krwi;
 
 CREATE TRIGGER trg_oddania_data_waznosci
 BEFORE INSERT OR UPDATE ON oddania_krwi
@@ -568,4 +564,5 @@ insert into Zapotrzebowania (id_szpitala, grupa_krwi, rh, ilosc_ml, status) valu
 UPDATE oddania_krwi
 SET ilosc_pozostala = ilosc_ml
 WHERE ilosc_pozostala = 0 AND status = 'dostepne';
+
 
