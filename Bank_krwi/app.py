@@ -1627,8 +1627,8 @@ def edytuj_uzytkownika():
     if rola == "ADMIN":
         return redirect("/admin")
 
-
     return render_template("dane_konta.html", uzytkownicy=uzytkownicy)
+
 @app.route("/logout")
 def logout():
     session.clear()
