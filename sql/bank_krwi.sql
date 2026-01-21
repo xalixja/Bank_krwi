@@ -443,10 +443,35 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
-CREATE TRIGGER trg_2_blokuj_wczesne_zgloszenie
+CREATE TRIGGER trg_2_blokuj_wczesne_oddanie
 BEFORE INSERT ON zgloszenia
 FOR EACH ROW
 EXECUTE FUNCTION blokuj_wczesne_zgloszenie();
+
+CREATE OR REPLACE FUNCTION blokuj_wczesne_oddanie()
+RETURNS trigger AS $$
+DECLARE
+    ostatnie DATE;
+BEGIN
+    SELECT data_oddania INTO ostatnie
+    FROM oddania_krwi
+    WHERE id_dawcy = NEW.id_dawcy
+    ORDER BY data_oddania DESC
+    LIMIT 1;
+
+    IF ostatnie IS NOT NULL AND NEW.data_oddania < ostatnie + INTERVAL '56 days' THEN
+        RAISE EXCEPTION 'Możesz oddać krew dopiero po %', ostatnie + INTERVAL '56 days';
+    END IF;
+
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER trg_blokuj_wczesne_oddanie
+BEFORE INSERT ON oddania_krwi
+FOR EACH ROW
+EXECUTE FUNCTION blokuj_wczesne_oddanie();
+
 
 -- 1. Funkcja, która znajdzie ID dawcy i ID szpitala, a potem wpisze je do tabeli historii
 CREATE OR REPLACE FUNCTION automatyczny_dawca_szpital()

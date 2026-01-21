@@ -37,6 +37,7 @@ def login():
         conn = get_db()
         cur = conn.cursor()
 
+        #wyciagamy uzytkownika z bazy o podanym loginie i hasle
         cur.execute("""
                     SELECT id_uzytkownika, rola
                     FROM Uzytkownicy
