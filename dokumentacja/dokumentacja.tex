@@ -37,9 +37,9 @@
 \maketitle
 
 % ============================================================
-\section{I. Projekt koncepcji i założenia}
+\section{Projekt koncepcji i założenia}
 
-\subsection{1. Zdefiniowanie tematu projektu}
+\subsection{Zdefiniowanie tematu projektu}
 Celem projektu jest stworzenie kompletnego systemu informatycznego wspierającego działanie banku krwi. Aplikacja ma na celu cyfryzację procesów związanych z oddawaniem krwi, zarządzaniem magazynem oraz dystrybucją krwi do szpitali.
 
 \textbf{Główne cele i zadania:}
@@ -49,6 +49,7 @@ Celem projektu jest stworzenie kompletnego systemu informatycznego wspierająceg
     \item Rejestrowanie faktycznych oddań oraz wyników badań laboratoryjnych.
     \item Zarządzanie zapotrzebowaniami zgłaszanymi przez jednostki medyczne (szpitale).
     \item Monitorowanie stanu magazynowego krwi z uwzględnieniem daty ważności.
+    \item Kontrola dostępu do panelów w zależności od roli użytkownika.
 \end{itemize}
 
 \subsection{Analiza wymagań użytkownika}
@@ -126,7 +127,7 @@ W systemie zdefiniowano następujące klasy encji:
     \begin{itemize}
         \item Atrybuty: \texttt{login}, \texttt{haslo} (hash), \texttt{rola} (ENUM: ADMIN, PRACOWNIK, SZPITAL, DAWCA), \texttt{data\_rejestracji}.
     \end{itemize}
-
+    
     \item \textbf{Dawcy} (\texttt{Dawcy}): Rozszerzenie konta użytkownika o dane medyczne.
     \begin{itemize}
         \item Atrybuty: \texttt{imie}, \texttt{nazwisko}, \texttt{pesel} (unikalny), \texttt{grupa\_krwi}, \texttt{rh}, \texttt{kontakt}, \texttt{cel\_ml}.
@@ -144,14 +145,14 @@ W systemie zdefiniowano następujące klasy encji:
 
     \item \textbf{Zgłoszenia} (\texttt{Zgloszenia}): Rezerwacje terminów wizyt przez dawców.
     \begin{itemize}
-        \item Atrybuty: \texttt{data\_zgloszenia}, \texttt{status} (oczekujące/zaakceptowane).
+        \item Atrybuty: \texttt{data\_zgloszenia}, \texttt{status} (oczekujące/zrealizowane).
     \end{itemize}
 
     \item \textbf{Oddania Krwi} (\texttt{Oddania\_krwi}): Fizyczne jednostki krwi w magazynie.
     \begin{itemize}
-        \item Atrybuty: \texttt{data\_oddania}, \texttt{ilosc\_ml}, \texttt{data\_waznosci}, \texttt{status} (dostępne, zużyte, przeterminowane, odrzucone), \texttt{ilosc\_pozostala}.
+        \item Atrybuty: \texttt{data\_oddania}, \texttt{ilosc\_ml}, \texttt{data\_waznosci}, \texttt{status} (dostępne, zużyte, przeterminowane, odrzucone_badanie), \texttt{ilosc\_pozostala}.
     \end{itemize}
-
+    
     \item \textbf{Badania} (\texttt{Badania}): Wyniki testów wirusologicznych dla oddań.
     \begin{itemize}
         \item Atrybuty: \texttt{rodzaj\_badania} (HIV, HCV...), \texttt{wynik}, \texttt{data\_badania}.
@@ -171,7 +172,7 @@ System opiera się na relacjach realizowanych poprzez klucze obce (\textit{Forei
 
 \begin{itemize}
     \item \textbf{Relacja 1:1 (Dziedziczenie ról)}: Tabele \texttt{Dawcy}, \texttt{Pracownicy\_banku} oraz \texttt{Szpitale} są powiązane z tabelą \texttt{Uzytkownicy} poprzez klucz obcy \texttt{id\_uzytkownika}, który jest jednocześnie kluczem unikalnym. Pozwala to na oddzielenie danych autoryzacyjnych od danych osobowych.
-
+    
     \item \textbf{Relacja 1:N (Jeden do wielu)}:
     \begin{itemize}
         \item Jeden \textbf{Dawca} może mieć wiele \textbf{Oddań} oraz \textbf{Zgłoszeń}.
@@ -184,10 +185,10 @@ System opiera się na relacjach realizowanych poprzez klucze obce (\textit{Forei
 Zidentyfikowano obszary, w których zachodziła relacja N:M, i rozwiązano je poprzez wprowadzenie tabel pośredniczących:
 
 \begin{itemize}
-    \item \textbf{Realizacja zamówień (\texttt{Oddanie\_Zapotrzebowanie})}:
+    \item \textbf{Realizacja zamówień (\texttt{Oddanie\_Zapotrzebowanie})}: 
     Pojedyncze zapotrzebowanie (np. 1000 ml) może wymagać krwi z kilku różnych oddań (np. 2 worki po 450 ml + 100 ml z trzeciego). Z kolei jedno oddanie może zostać rozdzielone na kilka mniejszych zapotrzebowań. Tabela ta łączy \texttt{id\_oddania} z \texttt{id\_zapotrzebowania}, przechowując informację o konkretnej ilości przekazanej krwi (\texttt{ilosc\_ml}).
-
-    \item \textbf{Historia przepływu (\texttt{Dawca\_Szpital})}:
+    
+    \item \textbf{Historia przepływu (\texttt{Dawca\_Szpital})}: 
     Tabela służąca do celów raportowych i śledzenia drogi "Komu pomogłem?". Łączy Dawcę ze Szpitalem poprzez konkretne Oddanie, umożliwiając Dawcy sprawdzenie, do jakiej placówki trafiła jego krew.
 \end{itemize}
 
@@ -202,7 +203,7 @@ Zidentyfikowano obszary, w których zachodziła relacja N:M, i rozwiązano je po
 \section{Projekt logiczny}
 
 \subsection{Projektowanie tabel (Struktura SQL)}
-Poniżej przedstawiono kod SQL tworzący główne struktury danych (reszta tabel jest w skrypcie sql). Wykorzystano typy danych dopasowane do domeny (np. `VARCHAR(11)` dla PESEL, `CHECK` dla grup krwi).
+Poniżej przedstawiono kod SQL tworzący główne struktury danych. Wykorzystano typy danych dopasowane do domeny (np. `VARCHAR(11)` dla PESEL, `CHECK` dla grup krwi).
 
 \subsubsection{Tabela Użytkownicy}
 \begin{lstlisting}
@@ -230,6 +231,38 @@ create table Dawcy (
 );
 \end{lstlisting}
 
+\subsubsection{Tabela Pracownicy banku}
+\begin{lstlisting}
+create table Pracownicy_banku (
+    id_pracownika serial primary key,
+    imie varchar(30) not null,
+    nazwisko varchar(30) not null,
+    stanowisko varchar(20) check (stanowisko in ('lekarz','laborant')),
+    id_uzytkownika int unique references Uzytkownicy(id_uzytkownika)
+);
+\end{lstlisting}
+
+\subsubsection{Tabela Szpitale}
+\begin{lstlisting}
+create table Szpitale (
+    id_szpitala serial primary key,
+    nazwa varchar(100) not null,
+    adres varchar(200),
+    id_uzytkownika int unique references Uzytkownicy(id_uzytkownika)
+);
+\end{lstlisting}
+
+\subsubsection{Tabela Zgłoszenia}
+\begin{lstlisting}
+create table Zgloszenia (
+    id_zgloszenia serial primary key,
+    id_dawcy int references Dawcy(id_dawcy),
+    data_zgloszenia date default current_date,
+    status varchar(20) check (status in ('oczekujace','zrealizowane'))
+);
+
+\end{lstlisting}
+
 \subsubsection{Tabela Oddania Krwi}
 \begin{lstlisting}
 create table Oddania_krwi (
@@ -245,6 +278,33 @@ create table Oddania_krwi (
 );
 \end{lstlisting}
 
+\subsubsection{Tabela Zapotrzebowania}
+\begin{lstlisting}
+create table Zapotrzebowania (
+    id_zapotrzebowania serial primary key,
+    id_szpitala int references Szpitale(id_szpitala),
+    grupa_krwi varchar(2) check (grupa_krwi in ('A','B','AB','0')),
+    rh varchar(1) check (rh in ('+','-')),
+    ilosc_ml int check (ilosc_ml > 0),
+    status varchar(20) check (status in ('oczekujace','zrealizowane')),
+    data_wydania date,
+    id_pracownika int references Pracownicy_banku(id_pracownika)
+);
+
+\end{lstlisting}
+
+\subsubsection{Tabela Badania}
+\begin{lstlisting}
+create table Badania (
+    id_badania serial primary key,
+    id_oddania int references Oddania_krwi(id_oddania),
+    rodzaj_badania varchar(50) not null,
+    wynik varchar(50) check (wynik in('pozytywny', 'negatywny')),
+    data_badania date,
+    id_pracownika int references Pracownicy_banku(id_pracownika)
+);
+\end{lstlisting}
+
 \subsection{Słowniki danych}
 W bazie zastosowano ograniczenia (`CHECK constraints`), które pełnią rolę słowników danych, zapewniając integralność informacji.
 
@@ -255,7 +315,7 @@ rola & Uzytkownicy & 'ADMIN', 'PRACOWNIK', 'SZPITAL', 'DAWCA' \\ \hline
 grupa\_krwi & Dawcy, Zapotrzebowania & 'A', 'B', 'AB', '0' \\ \hline
 rh & Dawcy, Zapotrzebowania & '+', '-' \\ \hline
 stanowisko & Pracownicy\_banku & 'lekarz', 'laborant' \\ \hline
-status & Zgloszenia & 'oczekujace', 'zaakceptowane' \\ \hline
+status & Zgloszenia & 'oczekujace', 'zrealizowane' \\ \hline
 status & Oddania\_krwi & 'dostepne', 'zuzyte', 'przeterminowane', 'odrzucone\_badanie' \\ \hline
 ilosc\_ml & Oddania\_krwi & Przedział 200 - 500 \\ \hline
 ilosc\_ml & Zapotrzebowania, Oddanie\_Zapotrzebowanie & Większe od 0 \\ \hline
@@ -273,8 +333,115 @@ Projekt bazy danych został poddany procesowi normalizacji, aby uniknąć redund
 \subsection{Denormalizacja}
 W celu optymalizacji zapytań raportowych wprowadzono elementy denormalizacji w widokach, jednak struktura fizyczna tabel pozostaje znormalizowana. Wyjątkiem optymalizacyjnym jest kolumna `ilosc\_pozostala` w tabeli `Oddania\_krwi`, która jest aktualizowana na bieżąco, aby uniknąć każdorazowego sumowania wydań przy sprawdzaniu stanu magazynu.
 
-\subsection{Zaprojektowanie operacji na danych (Kwerendy)}
-Zdefiniowano widoki (Views) w celu uproszczenia warstwy logiki aplikacji i realizacji najczęstsze operacje wyszukiwania. Przykłady:
+\subsection{Zaprojektowanie operacji na danych - Widoki}
+Zdefiniowano widoki (Views) w celu uproszczenia warstwy logiki aplikacji i realizacji najczęstsze operacje wyszukiwania:
+
+\textbf{Stan magazynu:}
+\begin{lstlisting}
+CREATE OR REPLACE VIEW widok_magazyn AS
+SELECT
+    o.id_oddania,
+    d.imie || ' ' || d.nazwisko AS dawca,
+    d.grupa_krwi,
+    d.rh,
+    o.ilosc_ml AS ilosc_poczatkowa,
+    o.ilosc_pozostala,
+    o.status,
+    o.data_waznosci
+FROM oddania_krwi o
+JOIN dawcy d ON o.id_dawcy = d.id_dawcy;
+\end{lstlisting}
+
+\textbf{Szczegóły zapotrzebowań:}
+\begin{lstlisting}
+create view Widok_status_zapotrzebowan as
+select z.id_zapotrzebowania,
+       s.nazwa as szpital,
+       z.grupa_krwi,
+       z.rh,
+       z.ilosc_ml,
+       z.status,
+       z.data_wydania,
+       p.imie || ' ' || p.nazwisko as pracownik
+from Zapotrzebowania z
+join Szpitale s on z.id_szpitala = s.id_szpitala
+left join Pracownicy_banku p on z.id_pracownika = p.id_pracownika;
+\end{lstlisting}
+
+\textbf{Historia badań:}
+\begin{lstlisting}
+CREATE OR REPLACE VIEW widok_historia_badania AS
+SELECT 
+    b.id_badania,
+    o.id_oddania,
+    d.imie || ' ' || d.nazwisko AS dawca,
+    b.rodzaj_badania,
+    b.wynik,
+    b.data_badania,
+    p.imie || ' ' || p.nazwisko AS pracownik,
+    p.id_pracownika
+FROM Badania b
+JOIN Oddania_krwi o ON b.id_oddania = o.id_oddania
+JOIN Dawcy d ON o.id_dawcy = d.id_dawcy
+JOIN Pracownicy_banku p ON b.id_pracownika = p.id_pracownika;
+\end{lstlisting}
+
+\textbf{"Komu pomogłem?":}
+\begin{lstlisting}
+create view Widok_dawcy_szpitale as
+SELECT 
+    ds.id_dawcy,
+    d.imie || ' ' || d.nazwisko AS dawca,
+    s.nazwa AS szpital,
+    ds.data_przekazania,
+    o.ilosc_ml AS ilosc_oddana
+FROM dawca_szpital ds
+JOIN dawcy d ON ds.id_dawcy = d.id_dawcy
+JOIN szpitale s ON ds.id_szpitala = s.id_szpitala
+JOIN oddania_krwi o ON ds.id_oddania = o.id_oddania;
+\end{lstlisting}
+
+\textbf{Aktywność pracownika:}
+\begin{lstlisting}
+create view Widok_pracownicy_aktywnosc as
+select p.id_pracownika,
+       p.imie || ' ' || p.nazwisko as pracownik,
+       p.stanowisko,
+       count(distinct o.id_oddania) as liczba_oddan,
+       count(distinct b.id_badania) as liczba_badan,
+       count(distinct z.id_zapotrzebowania) as liczba_zapotrzebowan
+from Pracownicy_banku p
+left join Oddania_krwi o on p.id_pracownika = o.id_pracownika
+left join Badania b on p.id_pracownika = b.id_pracownika
+left join Zapotrzebowania z on p.id_pracownika = z.id_pracownika
+group by p.id_pracownika, p.imie, p.nazwisko, p.stanowisko;
+\end{lstlisting}
+
+\textbf{Średnia ilość oddanej krwi:}
+\begin{lstlisting}
+CREATE OR REPLACE VIEW widok_srednia_ilosc AS
+SELECT ROUND(AVG(o.ilosc_ml), 2) AS srednia_ml
+FROM oddania_krwi o;
+\end{lstlisting}
+
+\textbf{Daty oddania krwi:}
+\begin{lstlisting}
+create view Widok_dat_oddan as
+select id_dawcy, 
+		min(data_oddania) as pierwsze_oddanie,
+       max(data_oddania) as ostatnie_oddanie
+from Oddania_krwi
+group by 1;
+\end{lstlisting}
+
+\textbf{Statystyki badań:}
+\begin{lstlisting}
+create view Widok_statystyki_badan as
+select 
+    count(*) filter (where wynik = 'negatywny') as negatywne,
+    count(*) filter (where wynik = 'pozytywny') as pozytywne
+from Badania;
+\end{lstlisting}
 
 \textbf{Stan magazynu:}
 \begin{lstlisting}
@@ -287,6 +454,34 @@ FROM oddania_krwi o
 JOIN dawcy d ON o.id_dawcy = d.id_dawcy
 WHERE o.status = 'dostepne' AND o.ilosc_pozostala > 0
 GROUP BY d.grupa_krwi, d.rh;
+\end{lstlisting}
+
+\textbf{Suma oddanej krwi danego dawcy:}
+\begin{lstlisting}
+CREATE VIEW widok_suma_ml AS
+SELECT 
+    id_dawcy,
+    SUM(ilosc_ml) AS suma_ml
+FROM oddania_krwi
+GROUP BY id_dawcy;
+\end{lstlisting}
+
+\textbf{Logistyka oddawanej krwi do konkretnych zapotrzebowań:}
+\begin{lstlisting}
+CREATE OR REPLACE VIEW widok_powiazania AS
+SELECT 
+    oz.id_oddania,
+    o.data_oddania,
+    o.ilosc_ml AS ilosc_oddana,
+    oz.ilosc_ml AS ilosc_przekazana,
+    oz.id_zapotrzebowania,
+    z.data_wydania AS data_zapotrzebowania,
+    s.nazwa AS szpital
+FROM oddanie_zapotrzebowanie oz
+JOIN oddania_krwi o ON oz.id_oddania = o.id_oddania
+JOIN zapotrzebowania z ON oz.id_zapotrzebowania = z.id_zapotrzebowania
+JOIN szpitale s ON z.id_szpitala = s.id_szpitala
+ORDER BY oz.id_zapotrzebowania DESC;
 \end{lstlisting}
 
 \textbf{Raportowanie dużych zapotrzebowań (Agregacja)}\\
@@ -303,6 +498,223 @@ join Szpitale s on z.id_szpitala = s.id_szpitala
 group by s.nazwa, z.grupa_krwi, z.rh
 having sum(z.ilosc_ml) > 1000;
 \end{lstlisting}
+
+\subsection{Logika biznesowa - Wyzwalacze (triggery):}
+
+\textbf{Automatycznie wpisuje bieżącą datę wydania przy zmianie statusu zapotrzebowania na 'zrealizowane':}
+\begin{lstlisting}
+create or replace function set_data_wydania()
+returns trigger as $$
+begin
+    if NEW.status = 'zrealizowane' and NEW.data_wydania is null then
+        NEW.data_wydania := current_date;
+    end if;
+    return NEW;
+end;
+$$ language plpgsql;
+
+create trigger trg_set_data_wydania
+before insert or update on Zapotrzebowania
+for each row
+execute function set_data_wydania();
+\end{lstlisting}
+
+\textbf{Automatyczne ustawienie daty ważności (35 dni):}
+\begin{lstlisting}
+CREATE OR REPLACE FUNCTION ustaw_date_waznosci()
+RETURNS trigger AS $$
+BEGIN
+    -- ZAWSZE ustawiamy datę ważności na 35 dni od daty oddania
+    NEW.data_waznosci := NEW.data_oddania + INTERVAL '35 days';
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER trg_oddania_data_waznosci
+BEFORE INSERT OR UPDATE ON oddania_krwi
+FOR EACH ROW
+EXECUTE FUNCTION ustaw_date_waznosci();
+\end{lstlisting}
+
+\textbf{Zmienia status krwi na 'przeterminowane', jeśli minęła jej data ważności:}
+\begin{lstlisting}
+CREATE OR REPLACE FUNCTION oznacz_przeterminowane()
+RETURNS trigger AS $$
+BEGIN
+    IF NEW.data_waznosci < CURRENT_DATE THEN
+        NEW.status := 'przeterminowane';
+    END IF;
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER trg_przeterminowane
+BEFORE UPDATE OR INSERT ON oddania_krwi
+FOR EACH ROW
+EXECUTE FUNCTION oznacz_przeterminowane();
+\end{lstlisting}
+
+\textbf{Automatycznie zmienia status oddania na 'odrzucone', jeśli wynik badania jest pozytywny:}
+\begin{lstlisting}
+CREATE OR REPLACE FUNCTION oznacz_odrzucone_badanie()
+RETURNS trigger AS $$
+BEGIN
+    -- Jeśli wynik badania jest pozytywny -> odrzucamy jednostkę
+    IF NEW.wynik = 'pozytywny' THEN
+        UPDATE oddania_krwi
+        SET status = 'odrzucone_badanie'
+        WHERE id_oddania = NEW.id_oddania;
+    END IF;
+
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER trg_odrzucone_badanie
+AFTER INSERT OR UPDATE ON badania
+FOR EACH ROW
+EXECUTE FUNCTION oznacz_odrzucone_badanie();
+\end{lstlisting}
+
+\textbf{Po dodaniu oddania automatycznie zmienia status powiązanego zgłoszenia na 'zrealizowane':}
+\begin{lstlisting}
+CREATE OR REPLACE FUNCTION przyjmij_najstarsze_zgloszenie()
+RETURNS trigger AS $$
+BEGIN
+    -- Aktualizujemy najstarsze oczekujące zgłoszenie danego dawcy
+    UPDATE zgloszenia
+    SET status = 'zrealizowane'
+    WHERE id_zgloszenia = (
+        SELECT id_zgloszenia
+        FROM zgloszenia
+        WHERE id_dawcy = NEW.id_dawcy
+          AND status = 'oczekujace'
+        ORDER BY data_zgloszenia ASC
+        LIMIT 1
+    );
+
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER trg_przyjmij_zgloszenie
+AFTER INSERT ON oddania_krwi
+FOR EACH ROW
+EXECUTE FUNCTION przyjmij_najstarsze_zgloszenie();
+\end{lstlisting}
+
+\textbf{Blokuje możliwość dodania nowego zgłoszenia, jeśli dawca ma już jedno oczekujące:}
+\begin{lstlisting}
+CREATE OR REPLACE FUNCTION blokuj_wiele_zgloszen()
+RETURNS trigger AS $$
+BEGIN
+    IF EXISTS (
+        SELECT 1 FROM zgloszenia
+        WHERE id_dawcy = NEW.id_dawcy
+          AND status = 'oczekujace'
+    ) THEN
+        RAISE EXCEPTION 'Dawca ma już aktywne zgłoszenie.';
+    END IF;
+
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER trg_1_blokuj_wiele_zgloszen
+BEFORE INSERT ON zgloszenia
+FOR EACH ROW
+EXECUTE FUNCTION blokuj_wiele_zgloszen();
+\end{lstlisting}
+
+\textbf{Blokada zbyt częstych oddań (56 dni przerwy)}
+Funkcja sprawdza datę ostatniego oddania dla danego dawcy przed dodaniem nowego zgłoszenia.
+\begin{lstlisting}
+CREATE OR REPLACE FUNCTION blokuj_wczesne_zgloszenie()
+RETURNS trigger AS $$
+DECLARE
+    ostatnie DATE;
+BEGIN
+    SELECT data_oddania INTO ostatnie
+    FROM oddania_krwi
+    WHERE id_dawcy = NEW.id_dawcy
+    ORDER BY data_oddania DESC
+    LIMIT 1;
+
+    IF ostatnie IS NOT NULL AND NEW.data_zgloszenia < ostatnie + INTERVAL '56 days' THEN
+        RAISE EXCEPTION 'Możesz oddać krew dopiero po %', ostatnie + INTERVAL '56 days';
+    END IF;
+
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER trg_2_blokuj_wczesne_oddanie
+BEFORE INSERT ON zgloszenia
+FOR EACH ROW
+EXECUTE FUNCTION blokuj_wczesne_zgloszenie();
+\end{lstlisting}
+
+\textbf{Uniemożliwia rejestrację oddania krwi, jeśli od poprzedniego nie minęło 56 dni:}
+\begin{lstlisting}
+CREATE OR REPLACE FUNCTION blokuj_wczesne_oddanie()
+RETURNS trigger AS $$
+DECLARE
+    ostatnie DATE;
+BEGIN
+    SELECT data_oddania INTO ostatnie
+    FROM oddania_krwi
+    WHERE id_dawcy = NEW.id_dawcy
+    ORDER BY data_oddania DESC
+    LIMIT 1;
+
+    IF ostatnie IS NOT NULL AND NEW.data_oddania < ostatnie + INTERVAL '56 days' THEN
+        RAISE EXCEPTION 'Możesz oddać krew dopiero po %', ostatnie + INTERVAL '56 days';
+    END IF;
+
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER trg_blokuj_wczesne_oddanie
+BEFORE INSERT ON oddania_krwi
+FOR EACH ROW
+EXECUTE FUNCTION blokuj_wczesne_oddanie();
+\end{lstlisting}
+
+\textbf{Tworzy wpis w historii powiązań dawcy ze szpitalem w momencie przekazania krwi:}
+\begin{lstlisting}
+CREATE OR REPLACE FUNCTION automatyczny_dawca_szpital()
+RETURNS trigger AS $$
+DECLARE
+    v_id_dawcy INT;
+    v_id_szpitala INT;
+BEGIN
+    -- Pobieramy ID dawcy na podstawie oddania
+    SELECT id_dawcy INTO v_id_dawcy 
+    FROM oddania_krwi 
+    WHERE id_oddania = NEW.id_oddania;
+
+    -- Pobieramy ID szpitala na podstawie zapotrzebowania
+    SELECT id_szpitala INTO v_id_szpitala 
+    FROM zapotrzebowania 
+    WHERE id_zapotrzebowania = NEW.id_zapotrzebowania;
+
+    -- Wstawiamy rekord do tabeli Dawca_Szpital
+    -- (Używamy ON CONFLICT DO NOTHING, żeby nie wywaliło błędu, jak już coś tam jest)
+    INSERT INTO Dawca_Szpital (id_dawcy, id_szpitala, id_oddania, data_przekazania)
+    VALUES (v_id_dawcy, v_id_szpitala, NEW.id_oddania, CURRENT_DATE)
+    ON CONFLICT DO NOTHING;
+
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER trg_auto_dawca_szpital
+AFTER INSERT ON Oddanie_Zapotrzebowanie
+FOR EACH ROW
+EXECUTE FUNCTION automatyczny_dawca_szpital();
+\end{lstlisting}
+
 
 % ============================================================
 \section{Projekt funkcjonalny}
@@ -327,38 +739,27 @@ Baza danych dostarcza gotowe zestawy danych do raportów poprzez widoki, które 
 \subsection{Panel sterowania aplikacji}
 Aplikacja posiada główny Dashboard, który dynamicznie zmienia zawartość w zależności od roli zalogowanego użytkownika (`id\_uzytkownika` powiązane z tabelami ról).
 
-\subsection{Makropolecenia (Funkcje i Triggery)}
-W środowisku PostgreSQL rolę makropoleceń i automatyzacji pełnią funkcje składowane (Stored Functions) oraz wyzwalacze (Triggers). Zapewniają one automatyzację logiki biznesowej bez ingerencji użytkownika.
+\subsection{Makropolecenia i automatyzacja procesów}
 
-\textbf{Przykład 1: Automatyczne ustawienie daty ważności (35 dni)}
-\begin{lstlisting}
-CREATE OR REPLACE FUNCTION ustaw_date_waznosci()
-RETURNS trigger AS $$
-BEGIN
-    NEW.data_waznosci := NEW.data_oddania + INTERVAL '35 days';
-    RETURN NEW;
-END;
-$$ LANGUAGE plpgsql;
-\end{lstlisting}
+W systemie zaimplementowano szereg makropoleceń w formie funkcji logiki biznesowej (backend Python/Flask), które agregują złożone operacje na bazie danych pod jedną akcją użytkownika.
 
-\textbf{Przykład 2: Blokada zbyt częstych oddań (56 dni przerwy)}
-Funkcja sprawdza datę ostatniego oddania dla danego dawcy przed dodaniem nowego zgłoszenia.
-\begin{lstlisting}
-CREATE OR REPLACE FUNCTION blokuj_wczesne_zgloszenie()
-RETURNS trigger AS $$
-DECLARE
-    ostatnie DATE;
-BEGIN
-    SELECT data_oddania INTO ostatnie FROM oddania_krwi
-    WHERE id_dawcy = NEW.id_dawcy ORDER BY data_oddania DESC LIMIT 1;
+\begin{itemize}
+    \item \textbf{Makropolecenie: Automatyczna Realizacja Zapotrzebowania (Algorytm FIFO)} \\
+    \textit{Lokalizacja w kodzie:} \texttt{/pracownik/zapotrzebowania/zrealizuj/<int:id\_zapotrzebowania>} \\
+    \textbf{Działanie:} Po wywołaniu funkcji system automatycznie weryfikuje stan magazynowy, pobiera najstarsze dostępne jednostki krwi (zgodnie z zasadą FIFO), dzieli je na wymagane porcje, aktualizuje stany magazynowe (zmniejsza ilość lub oznacza jako ,,zużyte'') oraz zmienia status zapotrzebowania na ,,zrealizowane'' wraz z ustawieniem daty wydania.
 
-    IF ostatnie IS NOT NULL AND NEW.data_zgloszenia < ostatnie + INTERVAL '56 days' THEN
-        RAISE EXCEPTION 'Możesz oddać krew dopiero po %', ostatnie + INTERVAL '56 days';
-    END IF;
-    RETURN NEW;
-END;
-$$ LANGUAGE plpgsql;
-\end{lstlisting}
+    \item \textbf{Makropolecenie: Rejestracja Konta Zintegrowana z Profilem Dawcy} \\
+    \textit{Lokalizacja w kodzie:} \texttt{/register} \\
+    \textbf{Działanie:} System w ramach jednej transakcji atomowej weryfikuje unikalność loginu, tworzy konto użytkownika z zaszyfrowanym hasłem (bcrypt), tworzy powiązany profil dawcy z danymi osobowymi oraz automatycznie loguje użytkownika, inicjując sesję.
+
+    \item \textbf{Makropolecenie: Rejestracja Donacji na podstawie PESEL} \\
+    \textit{Lokalizacja w kodzie:} \texttt{/pracownik/oddania} (metoda POST) \\
+    \textbf{Działanie:} Pracownik wprowadza jedynie numer PESEL i ilość pobranej krwi. Makropolecenie wyszukuje ID dawcy w bazie, waliduje poprawność daty (blokada dat z przyszłości) i rejestruje nowe oddanie, tworząc relację między dawcą, pracownikiem a jednostką krwi.
+
+    \item \textbf{Makropolecenie: Walidacja i Rejestracja Badania} \\
+    \textit{Lokalizacja w kodzie:} \texttt{/pracownik/badania} (metoda POST) \\
+    \textbf{Działanie:} System przyjmuje wyniki badań laboratoryjnych, weryfikuje logiczną poprawność daty i zapisuje wynik w historii. Operacja ta jest ściśle powiązana z triggerami bazy danych, co może skutkować automatyczną dyskwalifikacją jednostki krwi (zmiana statusu na ,,odrzucone'').
+\end{itemize}
 
 % ============================================================
 \section{Dokumentacja}
@@ -405,13 +806,13 @@ Projekt zrealizowano w architekturze klient-serwer, uruchamianej w środowisku l
 \item \textbf{Struktura plików}:
     \begin{itemize}
         \item \texttt{bank\_krwi.sql} – kompletny skrypt inicjalizujący bazę danych. Zawiera definicje DDL (tworzenie tabel, relacji, indeksów), implementację logiki biznesowej po stronie serwera SQL (funkcje PL/pgSQL, wyzwalacze/triggery), definicje widoków raportowych oraz instrukcje DML zasilające system danymi startowym.
-
+        
         \item \texttt{db/connection.py} – moduł odpowiedzialny za nawiązywanie połączenia z bazą danych. Wykorzystuje bibliotekę \texttt{psycopg2} do komunikacji z PostgreSQL. Centralizuje konfigurację parametrów połączenia (host, port, poświadczenia) oraz automatycznie ustawia ścieżkę wyszukiwania (\texttt{search\_path}) na schemat \texttt{bank\_krwi}, co upraszcza zapytania SQL w aplikacji.
-
+        
         \item \texttt{app.py} – główny plik wykonywalny aplikacji oparty na frameworku Flask. Pełni rolę kontrolera: obsługuje routing (ścieżki URL), zarządza sesjami użytkowników, realizuje mechanizmy autoryzacji (sprawdzanie ról) oraz pośredniczy w wymianie danych między formularzami a bazą danych.
-
+        
         \item \texttt{templates/} – katalog zawierający szablony widoków HTML. Wykorzystuje silnik szablonów Jinja2 do dynamicznego renderowania danych pobranych z bazy (np. tabele wyników, alerty). Warstwa prezentacji jest zintegrowana z frameworkiem Bootstrap 5, co zapewnia responsywność interfejsu.
-
+        
         \item \texttt{static/style.css} – arkusz stylów definiujący unikalną szatę graficzną aplikacji. Rozszerza standardowe komponenty frameworka Bootstrap (takie jak tabele i przyciski), nadpisując ich zmienne i wprowadzając dedykowany motyw kolorystyczny oparty na głębokiej czerwieni (\texttt{\#8a0303}), co zapewnia interfejsowi wygląd adekwatny do tematyki Banku Krwi.
     \end{itemize}
 \end{itemize}
